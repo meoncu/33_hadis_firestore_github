@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Book, LayoutDashboard, Search, Menu, X } from 'lucide-react';
+import { Book, LayoutDashboard, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -71,12 +71,11 @@ export default function Navbar() {
                         href="/admin/dashboard"
                         className="block text-lg text-blue-400 font-medium pt-4 border-t border-slate-800"
                         onClick={() => setIsOpen(false)}
-          ) => true}>
-                    Yönetim Paneli
-                </Link>
-        </div>
-    )
-}
-    </nav >
-  );
+                    >
+                        Yönetim Paneli
+                    </Link>
+                </div>
+            )}
+        </nav>
+    );
 }
