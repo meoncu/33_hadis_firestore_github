@@ -7,6 +7,8 @@ const r2Client = new S3Client({
         accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
     },
+    // SSL hatasını çözmek için eklenen zorunlu parametreler
+    forcePathStyle: true,
 });
 
 export async function uploadToR2(file: File): Promise<string> {
@@ -22,6 +24,7 @@ export async function uploadToR2(file: File): Promise<string> {
         })
     );
 
-    // You must have a public URL or custom domain set up in Cloudflare R2 Settings
-    return `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${fileName}`;
+    // URL oluşturma
+    const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, "");
+    return `${publicUrl}/${fileName}`;
 }
