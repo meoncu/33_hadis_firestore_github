@@ -14,3 +14,11 @@ export function formatDate(timestamp: any) {
         year: 'numeric',
     }).format(date);
 }
+
+export function getProxyUrl(url: string | undefined | null) {
+    if (!url) return '';
+    if (url.startsWith('blob:')) return url;
+    if (!url.includes('r2.dev')) return url;
+    const filename = url.split('/').pop();
+    return `/api/image/${filename}`;
+}

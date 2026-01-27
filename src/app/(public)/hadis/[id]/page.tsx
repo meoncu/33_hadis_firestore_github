@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { hadithService } from '@/services/firestore';
 import { Hadith } from '@/types/hadith';
 import { Loader2, ArrowLeft, Share2, Heart, Calendar, BookOpen, Quote, Hash, User } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getProxyUrl } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
 export default function HadithDetailPage() {
@@ -62,7 +62,7 @@ export default function HadithDetailPage() {
                     {hadith.resimUrl && (
                         <div className="w-full h-[400px] relative">
                             <img
-                                src={hadith.resimUrl}
+                                src={getProxyUrl(hadith.resimUrl)}
                                 alt="Hadis görseli"
                                 className="w-full h-full object-cover"
                                 onError={(e) => {

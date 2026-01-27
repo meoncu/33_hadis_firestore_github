@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { Hadith, HadithCategory } from '@/types/hadith';
 import { Loader2, Save, X, Image as ImageIcon, Upload, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { uploadImageAction } from '@/app/admin/actions';
+import { getProxyUrl } from '@/lib/utils';
 
 const CATEGORIES: HadithCategory[] = ['Ahlak', 'İbadet', 'Dua', 'İman', 'Sosyal Hayat', 'Diğer'];
 
@@ -112,11 +113,14 @@ export default function HadithForm({ initialData, onSubmit, onCancel, isLoading:
                         ) : previewUrl || watchedResimUrl ? (
                             <div className="relative w-full h-full flex flex-col items-center justify-center gap-4">
                                 <img
-                                    src={watchedResimUrl || previewUrl || ''}
+                                    src={getProxyUrl(watchedResimUrl || previewUrl || '')}
                                     alt="Önizleme"
                                     className="max-h-[160px] object-contain rounded-lg shadow-2xl border border-slate-700"
                                     onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x150?text=Resim+Yuklenemedi';
+                                        const target = e.target as HTMLImageElement;
+                                        // Placeholder fail olursa boş bir alan göster
+                                        target.style.opacity = '0';
+                                        console.error('Resim yüklenemedi, proxy kontrol edin.');
                                     }}
                                 />
                                 <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition-colors">

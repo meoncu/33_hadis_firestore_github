@@ -4,7 +4,7 @@ import { Hadith } from '@/types/hadith';
 import { motion } from 'framer-motion';
 import { Share2, Heart, BookOpen, User, Hash } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn, getProxyUrl } from '@/lib/utils';
 
 interface HadithCardProps {
     hadith: Hadith;
@@ -42,7 +42,7 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
             {hadith.resimUrl && (
                 <div className="relative h-48 w-full overflow-hidden border-b border-slate-800">
                     <img
-                        src={hadith.resimUrl}
+                        src={getProxyUrl(hadith.resimUrl)}
                         alt="Hadis görseli"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {

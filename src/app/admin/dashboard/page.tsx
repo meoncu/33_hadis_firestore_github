@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-    const { user, loading: authLoading, logout } = useAuth();
+    const { user, loading: authLoading, logout, loginWithGoogle } = useAuth();
     const [hadiths, setHadiths] = useState<Hadith[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -44,7 +44,39 @@ export default function AdminDashboard() {
     }, [user]);
 
     if (authLoading) return <div className="p-20 text-center text-slate-400">Yükleniyor...</div>;
-    if (!user) return <div className="p-20 text-center text-red-500">Yetkisiz Erişim! Lütfen giriş yapın.</div>;
+    if (!user) return (
+        <div className="min-h-screen bg-[#050a14] flex flex-col items-center justify-center p-6 text-center">
+            <div className="glass-card p-12 border border-slate-800 shadow-2xl flex flex-col items-center gap-6 max-w-lg">
+                <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center">
+                    <LogOut className="text-blue-500" size={40} />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold text-white mb-2 font-outfit">Yönetim Paneline Giriş Yapın</h2>
+                    <p className="text-slate-500 text-sm">Bu alanı görebilmek için yönetici hesabınızla giriş yapmanız gerekmektedir.</p>
+                </div>
+
+                <div className="flex flex-col w-full gap-3">
+                    <button
+                        onClick={() => loginWithGoogle()}
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl transition-all font-bold shadow-lg shadow-blue-600/20"
+                    >
+                        Google ile Giriş Yap
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.reload();
+                        }}
+                        className="w-full px-6 py-3 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition-colors border border-slate-700 text-xs font-semibold"
+                    >
+                        TARAYICI HAFIZASINI TEMİZLE (HARD RESET)
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     const handleSubmit = async (data: any) => {
         setLoading(true);
