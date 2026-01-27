@@ -51,7 +51,10 @@ export default function AdminDashboard() {
             }
             setIsFormOpen(false);
             setEditingHadith(null);
-            fetchAll();
+            await fetchAll();
+        } catch (error: any) {
+            console.error('Save error:', error);
+            alert(`Kaydetme hatası: ${error.message || 'Bilinmeyen hata'}`);
         } finally {
             setLoading(false);
         }
