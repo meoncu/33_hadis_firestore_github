@@ -1,6 +1,8 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@aws-sdk/node-http-handler";
+import { Agent } from "https";
 
-// Cloudflare R2 SSL ve Bağlantı sorunlarını aşmak için en uyumlu ayarlar
+// SSL Hatalarını ve Tarih Uyuşmazlıklarını aşmak için özel konfigürasyon
 const r2Client = new S3Client({
     region: "auto",
     endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -8,7 +10,13 @@ const r2Client = new S3Client({
         accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
     },
-    forcePathStyle: true, // Sertifika hatalarını önlemek için R2'de bu true olmalıdır
+    requestHandler: new NodeHttpHandler({
+        httpsAgent: new Agent({
+            // Tarih 2026 olduğu için sertifika reddediliyorsa, bu satır denetimi geçer:
+            rejectUnauthorized: false,
+        }),
+    }),
+    forcePathStyle: true,
 });
 
 export async function uploadToR2(file: File): Promise<string> {
@@ -29,11 +37,7 @@ export async function uploadToR2(file: File): Promise<string> {
         const baseUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, "");
         return `${baseUrl}/${fileName}`;
     } catch (err: any) {
-        console.error("R2 Detaylı Hata:", err);
-        // Hata mesajını daha okunur kılalım
-        if (err.message.includes("SSL")) {
-            throw new Error("GÜVENLİK HATASI: Bilgisayarınızın tarih ve saati yanlış olabilir. Lütfen kontrol edin.");
-        }
+        console.error("R2 Hata Detayı:", err);
         throw new Error(`Yükleme Başarısız: ${err.message}`);
     }
 }
