@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Hadith, HadithCategory } from '@/types/hadith';
-import { Loader2, Save, X, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { Loader2, Save, X, Image as ImageIcon, Upload, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { uploadImageAction } from '@/app/admin/actions';
 
 const CATEGORIES: HadithCategory[] = ['Ahlak', 'İbadet', 'Dua', 'İman', 'Sosyal Hayat', 'Diğer'];
 
@@ -17,7 +18,7 @@ const schema = z.object({
     yayinDurumu: z.enum(['draft', 'published']),
     dil: z.enum(['TR', 'EN']),
     siraNo: z.string().transform((val) => val === '' ? undefined : Number(val)).optional(),
-    resimUrl: z.string().url('Geçerli bir URL girmelisiniz').or(z.literal('')).optional(),
+    resimUrl: z.string().optional(),
 });
 
 interface HadithFormProps {
@@ -27,8 +28,12 @@ interface HadithFormProps {
     isLoading?: boolean;
 }
 
-export default function HadithForm({ initialData, onSubmit, onCancel, isLoading }: HadithFormProps) {
-    const { register, handleSubmit, watch, formState: { errors } } = useForm({
+export default function HadithForm({ initialData, onSubmit, onCancel, isLoading: parentLoading }: HadithFormProps) {
+    const [uploading, setUploading] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.resimUrl || null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
+    const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         resolver: zodResolver(schema),
         defaultValues: {
             metin: initialData?.metin || '',
@@ -44,6 +49,45 @@ export default function HadithForm({ initialData, onSubmit, onCancel, isLoading 
 
     const watchedResimUrl = watch('resimUrl');
 
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Dosya boyutu kontrolü (Örn: 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Dosya çok büyük (Maksimum 5MB)');
+            return;
+        }
+
+        // Yerel önizleme göster
+        const localPreview = URL.createObjectURL(file);
+        setPreviewUrl(localPreview);
+        setUploadError(null);
+        setUploading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const result = await uploadImageAction(formData);
+
+            if (result.success && result.url) {
+                setValue('resimUrl', result.url);
+                setPreviewUrl(result.url);
+                console.log('R2 Yükleme Başarılı:', result.url);
+            } else {
+                setUploadError(result.error || 'Yükleme başarısız oldu');
+                setPreviewUrl(initialData?.resimUrl || null);
+            }
+        } catch (error: any) {
+            console.error('Upload error:', error);
+            setUploadError('Bağlantı hatası oluştu.');
+            setPreviewUrl(initialData?.resimUrl || null);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     return (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-center mb-6">
@@ -56,51 +100,63 @@ export default function HadithForm({ initialData, onSubmit, onCancel, isLoading 
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* Image URL Input & Preview */}
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-2">Resim URL (Dış Bağlantı)</label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                                <LinkIcon size={18} />
+                {/* Image Upload Section */}
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium text-slate-400">Hadis Görseli (Cloudflare R2)</label>
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl p-4 bg-slate-950/50 hover:bg-slate-800/30 transition-all group relative min-h-[180px]">
+                        {uploading ? (
+                            <div className="flex flex-col items-center gap-3">
+                                <Loader2 className="animate-spin text-blue-500" size={40} />
+                                <span className="text-sm font-medium text-blue-400 animate-pulse">Buluta yükleniyor...</span>
                             </div>
-                            <input
-                                {...register('resimUrl')}
-                                className="w-full admin-input pl-10"
-                                placeholder="https://example.com/resim.jpg"
-                            />
-                        </div>
-                        {errors.resimUrl && <p className="mt-1 text-xs text-red-400">{errors.resimUrl.message}</p>}
+                        ) : previewUrl || watchedResimUrl ? (
+                            <div className="relative w-full h-full flex flex-col items-center justify-center gap-4">
+                                <img
+                                    src={watchedResimUrl || previewUrl || ''}
+                                    alt="Önizleme"
+                                    className="max-h-[160px] object-contain rounded-lg shadow-2xl border border-slate-700"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x150?text=Resim+Yuklenemedi';
+                                    }}
+                                />
+                                <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition-colors">
+                                    Resmi Değiştir
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                                </label>
+                            </div>
+                        ) : (
+                            <label className="flex flex-col items-center cursor-pointer w-full py-10">
+                                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <Upload className="text-blue-500" size={32} />
+                                </div>
+                                <span className="text-slate-200 font-semibold mb-1">Resim Yükle</span>
+                                <span className="text-slate-500 text-xs">PNG, JPG veya WEBP (Maks 5MB)</span>
+                                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                            </label>
+                        )}
+
+                        {uploadError && (
+                            <div className="absolute bottom-2 left-0 right-0 flex justify-center">
+                                <div className="flex items-center gap-1.5 text-red-400 text-[10px] font-bold bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+                                    <AlertCircle size={12} />
+                                    {uploadError}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {watchedResimUrl && (
-                        <div className="border-2 border-slate-800 rounded-xl p-2 bg-slate-900/50 flex flex-col items-center">
-                            <span className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Önizleme</span>
-                            <img
-                                src={watchedResimUrl}
-                                alt="Önizleme"
-                                className="max-h-[150px] object-contain rounded-lg shadow-xl"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x150?text=Gecersiz+URL';
-                                }}
-                            />
-                        </div>
-                    )}
+                    {/* Gizli URL kutusu (Sadece sistem için, manuel düzenlenebilir) */}
+                    <input type="hidden" {...register('resimUrl')} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="md:col-span-1">
                         <label className="block text-sm font-medium text-slate-400 mb-2">Sıra No</label>
-                        <input
-                            {...register('siraNo')}
-                            type="number"
-                            className="w-full admin-input"
-                            placeholder="Örn: 1"
-                        />
+                        <input {...register('siraNo')} type="number" className="w-full admin-input" placeholder="1" />
                     </div>
                     <div className="md:col-span-3">
                         <label className="block text-sm font-medium text-slate-400 mb-2">Ravi (Opsiyonel)</label>
-                        <input {...register('ravi')} className="w-full admin-input" placeholder="Örn: Ebu Hureyre" />
+                        <input {...register('ravi')} className="w-full admin-input" placeholder="Ebu Hureyre" />
                     </div>
                 </div>
 
@@ -112,14 +168,14 @@ export default function HadithForm({ initialData, onSubmit, onCancel, isLoading 
                         className="w-full admin-input resize-none"
                         placeholder="Peygamber Efendimiz (sav) buyurdu ki..."
                     />
-                    {errors.metin && <p className="mt-1 text-xs text-red-400">{errors.metin.message}</p>}
+                    {errors.metin && <p className="mt-1 text-xs text-red-400 font-medium">{errors.metin.message}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-400 mb-2">Kaynak</label>
-                        <input {...register('kaynak')} className="w-full admin-input" placeholder="Örn: Buhari, Edeb 1" />
-                        {errors.kaynak && <p className="mt-1 text-xs text-red-400">{errors.kaynak.message}</p>}
+                        <input {...register('kaynak')} className="w-full admin-input" placeholder="Buhari, Edeb 1" />
+                        {errors.kaynak && <p className="mt-1 text-xs text-red-400 font-medium">{errors.kaynak.message}</p>}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-400 mb-2">Kategori</label>
@@ -131,7 +187,7 @@ export default function HadithForm({ initialData, onSubmit, onCancel, isLoading 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-2">Yayın Durumu</label>
+                        <label className="block text-sm font-medium text-slate-400 mb-2">Durum</label>
                         <select {...register('yayinDurumu')} className="w-full admin-input">
                             <option value="draft">Taslak</option>
                             <option value="published">Yayında</option>
@@ -146,20 +202,16 @@ export default function HadithForm({ initialData, onSubmit, onCancel, isLoading 
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="px-6 py-2.5 rounded-xl border border-slate-700 text-slate-400 hover:bg-slate-800 transition-all font-medium"
-                    >
+                <div className="flex justify-end gap-3 pt-6 border-t border-slate-800/50">
+                    <button type="button" onClick={onCancel} className="px-6 py-2.5 border border-slate-700 text-slate-400 rounded-xl hover:bg-slate-800 transition-all font-medium">
                         Vazgeç
                     </button>
                     <button
                         type="submit"
-                        disabled={isLoading}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-xl transition-all font-semibold flex items-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                        disabled={parentLoading || uploading}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-10 py-2.5 rounded-xl transition-all font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50 disabled:grayscale"
                     >
-                        {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                        {(parentLoading || uploading) ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                         {initialData ? 'Güncelle' : 'Kaydet'}
                     </button>
                 </div>
