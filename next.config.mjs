@@ -8,14 +8,14 @@ const nextConfig = {
             },
         ],
     },
-    webpack: (config, { isServer }) => {
-        if (!isServer) {
-            // undici is a node-only library, we don't need it in the browser
-            config.resolve.fallback = {
-                ...config.resolve.fallback,
-                undici: false,
-            };
-        }
+    experimental: {
+        serverComponentsExternalPackages: ['undici'],
+    },
+    webpack: (config) => {
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            undici: false,
+        };
         return config;
     },
 };
