@@ -8,15 +8,16 @@ const nextConfig = {
             },
         ],
     },
-    // Transpile packages that use modern JS syntax not supported by the default build loader
-    transpilePackages: [
-        'firebase',
-        '@firebase/auth',
-        '@firebase/app',
-        '@firebase/firestore',
-        '@firebase/storage',
-        'undici'
-    ],
+    webpack: (config, { isServer }) => {
+        if (!isServer) {
+            // undici is a node-only library, we don't need it in the browser
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                undici: false,
+            };
+        }
+        return config;
+    },
 };
 
 export default nextConfig;
