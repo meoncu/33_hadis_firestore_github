@@ -13,7 +13,8 @@ import {
     LogOut,
     CheckCircle2,
     Clock,
-    ImageIcon
+    ImageIcon,
+    Search
 } from 'lucide-react';
 
 export default function AdminDashboard() {
