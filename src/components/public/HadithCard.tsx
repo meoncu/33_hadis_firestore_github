@@ -45,6 +45,9 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                         src={hadith.resimUrl}
                         alt="Hadis görseli"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x400?text=Resim+Yuklenemedi';
+                        }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
                 </div>

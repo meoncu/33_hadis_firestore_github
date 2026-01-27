@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { hadithService } from '@/services/firestore';
-import { storageService } from '@/services/storage';
 import { Hadith } from '@/types/hadith';
 import HadithForm from '@/components/admin/HadithForm';
 import {
@@ -27,7 +26,7 @@ export default function AdminDashboard() {
     const fetchAll = async () => {
         setLoading(true);
         try {
-            const result = await hadithService.getHadiths({ pageSize: 100, includeDrafts: true });
+            const result = await hadithService.getHadiths({ pageSize: 120, includeDrafts: true });
             // Sort by siraNo primarily
             const sortedData = result.data.sort((a, b) => {
                 const siraA = a.siraNo || Number.MAX_SAFE_INTEGER;
@@ -47,16 +46,16 @@ export default function AdminDashboard() {
     if (authLoading) return <div className="p-20 text-center text-slate-400">Yükleniyor...</div>;
     if (!user) return <div className="p-20 text-center text-red-500">Yetkisiz Erişim! Lütfen giriş yapın.</div>;
 
-    const handleSubmit = async (data: any, imageFile?: File | null) => {
+    const handleSubmit = async (data: any) => {
         setLoading(true);
         try {
             let finalData = { ...data };
 
-            // Handle image upload if a new file is selected
-            if (imageFile) {
-                const imageUrl = await storageService.uploadHadithImage(imageFile);
-                finalData.resimUrl = imageUrl;
+            // Image status is set to ready if a URL is provided
+            if (finalData.resimUrl) {
                 finalData.resimDurumu = 'ready';
+            } else {
+                finalData.resimDurumu = 'none';
             }
 
             if (editingHadith) {
@@ -76,13 +75,11 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleDelete = async (hadith: Hadith) => {
+    const handleDelete = async (id: string) => {
         if (confirm('Bu hadisi silmek istediğinize emin misiniz?')) {
             try {
-                if (hadith.resimUrl) {
-                    await storageService.deleteImage(hadith.resimUrl);
-                }
-                await hadithService.deleteHadith(hadith.id!);
+                // No need to delete images from external URLs
+                await hadithService.deleteHadith(id);
                 await fetchAll();
             } catch (error) {
                 console.error('Delete error:', error);
@@ -153,7 +150,14 @@ export default function AdminDashboard() {
                                         <td className="px-6 py-4">
                                             {h.resimUrl ? (
                                                 <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-700">
-                                                    <img src={h.resimUrl} alt="" className="w-full h-full object-cover" />
+                                                    <img
+                                                        src={h.resimUrl}
+                                                        alt=""
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/50?text=Err';
+                                                        }}
+                                                    />
                                                 </div>
                                             ) : (
                                                 <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-slate-600 border border-slate-700">
@@ -190,7 +194,7 @@ export default function AdminDashboard() {
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(h)}
+                                                    onClick={() => handleDelete(h.id!)}
                                                     className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                                                 >
                                                     <Trash2 size={18} />

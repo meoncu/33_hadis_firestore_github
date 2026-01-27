@@ -65,6 +65,9 @@ export default function HadithDetailPage() {
                                 src={hadith.resimUrl}
                                 alt="Hadis görseli"
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1200x800?text=Resim+Yuklenemedi';
+                                }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
                             {hadith.siraNo && (
