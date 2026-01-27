@@ -32,7 +32,7 @@ export const hadithService = {
         let q = query(
             collection(db, HADITH_COLLECTION),
             where('yayinDurumu', '==', 'published'),
-            orderBy('eklemeTarihi', 'desc'),
+            // orderBy('eklemeTarihi', 'desc'),
             limit(pageSize)
         );
 
