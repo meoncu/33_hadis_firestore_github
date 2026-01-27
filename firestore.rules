@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // allowlist admin emails (starting point)
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email.matches('.*@gmail.com') // Example: restrict to @gmail.com or specific emails
+        // || request.auth.token.admin == true (for custom claims later)
+      );
+    }
+
+    match /hadiths/{hadithId} {
+      // Public: anyone can read published hadiths
+      allow read: if resource.data.yayinDurumu == 'published' || isAdmin();
+      
+      // Admin: full access
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Global rule for other collections (if any added later)
+    match /{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
