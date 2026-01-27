@@ -27,7 +27,7 @@ export default function AdminDashboard() {
         setLoading(true);
         try {
             // In a real app, you'd want pagination here too
-            const result = await hadithService.getHadiths({ pageSize: 50 });
+            const result = await hadithService.getHadiths({ pageSize: 50, includeDrafts: true });
             setHadiths(result.data);
         } finally {
             setLoading(false);

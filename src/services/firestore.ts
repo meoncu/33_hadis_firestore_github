@@ -25,16 +25,19 @@ export const hadithService = {
     async getHadiths(params: {
         category?: HadithCategory | 'All',
         lastDoc?: QueryDocumentSnapshot,
-        pageSize?: number
+        pageSize?: number,
+        includeDrafts?: boolean
     }) {
-        const { category, lastDoc, pageSize = 12 } = params;
+        const { category, lastDoc, pageSize = 12, includeDrafts = false } = params;
 
         let q = query(
             collection(db, HADITH_COLLECTION),
-            where('yayinDurumu', '==', 'published'),
-            // orderBy('eklemeTarihi', 'desc'),
             limit(pageSize)
         );
+
+        if (!includeDrafts) {
+            q = query(q, where('yayinDurumu', '==', 'published'));
+        }
 
         if (category && category !== 'All') {
             q = query(q, where('kategori', '==', category));
