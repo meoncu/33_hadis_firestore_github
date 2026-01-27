@@ -11,6 +11,7 @@ export interface Hadith {
   etiketler: string[];
   eklemeTarihi: Timestamp | any; // Firestore timestamp or Date
   dil: 'TR' | 'EN';
+  siraNo?: number;
   resimUrl?: string;
   resimDurumu: 'none' | 'pending' | 'ready';
   yayinDurumu: 'draft' | 'published';
