@@ -26,11 +26,21 @@ export function useAuth() {
 
     const loginWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
+        // Prompting for account selection to avoid auto-closing in some cached states
+        provider.setCustomParameters({ prompt: 'select_account' });
+
         try {
-            await signInWithPopup(auth, provider);
+            console.log("Firebase Config check:", {
+                apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "Defined" : "MISSING",
+                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? "Defined" : "MISSING"
+            });
+            console.log("Starting Google Login...");
+            const result = await signInWithPopup(auth, provider);
+            console.log("Login Success:", result.user.email);
             router.push('/admin/dashboard');
-        } catch (error) {
-            console.error('Login error:', error);
+        } catch (error: any) {
+            console.error('Login error detail:', error.code, error.message);
+            alert(`Giriş hatası: ${error.message}\nKod: ${error.code}`);
         }
     };
 
