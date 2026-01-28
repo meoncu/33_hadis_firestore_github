@@ -7,13 +7,13 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
-    metadataBase: new URL('https://33-hadis-firestore-github.vercel.app'),
+    metadataBase: new URL('https://hadis.ankebut.com.tr'),
     title: "HikmetPınarı - Sahih Hadis Keşif Portalı",
     description: "Modern ve hızlı arayüzüyle sahih hadisleri keşfedin, paylaşın ve hayatınıza hikmet katın.",
     openGraph: {
         title: 'HikmetPınarı',
         description: 'Sahih Hadis Keşif Portalı',
-        url: 'https://33-hadis-firestore-github.vercel.app',
+        url: 'https://hadis.ankebut.com.tr',
         siteName: 'HikmetPınarı',
         images: [{ url: '/og-image.png' }],
         locale: 'tr_TR',

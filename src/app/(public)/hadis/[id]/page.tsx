@@ -18,8 +18,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const title = `Hadis #${hadith.siraNo || ''} - ${hadith.kategori}`;
     const description = hadith.metin.substring(0, 160) + '...';
 
-    // Social Media Image (Crawlers need the real URL, not our proxy)
-    const imageUrl = hadith.resimUrl || 'https://33-hadis-firestore-github.vercel.app/og-image.png';
+    // Sosyal medya botları için resmi kendi domainimiz üzerinden tam adres olarak veriyoruz
+    let imageUrl = 'https://hadis.ankebut.com.tr/og-image.png';
+    if (hadith.resimUrl) {
+        const filename = hadith.resimUrl.split('/').pop();
+        imageUrl = `https://hadis.ankebut.com.tr/api/image/${filename}`;
+    }
 
     return {
         title,
