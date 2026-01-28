@@ -41,11 +41,7 @@ export default function Navbar() {
                             {link.name}
                         </Link>
                     ))}
-                    <div className="h-6 w-px bg-slate-800" />
-                    <Link href="/admin/dashboard" className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
-                        <LayoutDashboard size={18} />
-                        Yönetim
-                    </Link>
+                    {/* Hidden admin access - manual navigation only */}
                 </div>
 
                 {/* Mobile Menu Button */}
@@ -67,13 +63,7 @@ export default function Navbar() {
                             {link.name}
                         </Link>
                     ))}
-                    <Link
-                        href="/admin/dashboard"
-                        className="block text-lg text-blue-400 font-medium pt-4 border-t border-slate-800"
-                        onClick={() => setIsOpen(false)}
-                    >
-                        Yönetim Paneli
-                    </Link>
+
                 </div>
             )}
         </nav>
