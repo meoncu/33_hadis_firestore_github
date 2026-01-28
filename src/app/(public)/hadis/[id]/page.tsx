@@ -18,12 +18,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const title = `Hadis #${hadith.siraNo || ''} - ${hadith.kategori}`;
     const description = hadith.metin.substring(0, 160) + '...';
 
-    // Sosyal medya botları için resmi kendi domainimiz üzerinden tam adres olarak veriyoruz
-    let imageUrl = 'https://hadis.ankebut.com.tr/og-image.png';
-    if (hadith.resimUrl) {
-        const filename = hadith.resimUrl.split('/').pop();
-        imageUrl = `https://hadis.ankebut.com.tr/api/image/${filename}`;
-    }
+    // Botlar için doğrudan R2 linkini kullanıyoruz (onların tarih sorunu yok)
+    // Eğer resim yoksa sitenin ana logosunu kullan
+    const imageUrl = hadith.resimUrl || 'https://hadis.ankebut.com.tr/og-image.png';
 
     return {
         title,
@@ -31,14 +28,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         openGraph: {
             title,
             description,
+            url: `https://hadis.ankebut.com.tr/hadis/${params.id}`,
             images: [
                 {
                     url: imageUrl,
                     width: 1200,
                     height: 630,
-                    alt: hadith.kategori,
+                    alt: title,
+                    type: 'image/png', // Varsayılan tip
                 },
             ],
+            siteName: 'HikmetPınarı',
+            locale: 'tr_TR',
             type: 'article',
         },
         twitter: {
