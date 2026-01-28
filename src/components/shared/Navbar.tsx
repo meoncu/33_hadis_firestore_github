@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Book, LayoutDashboard, Menu, X } from 'lucide-react';
+import { Book, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
+    const { user, loginWithGoogle, logout } = useAuth();
 
     const navLinks = [
         { name: 'Koleksiyonlar', href: '/' },
@@ -42,6 +44,30 @@ export default function Navbar() {
                         </Link>
                     ))}
                     {/* Hidden admin access - manual navigation only */}
+                    <div className="h-6 w-px bg-slate-800" />
+
+                    {user ? (
+                        <div className="flex items-center gap-4">
+                            <img
+                                src={user.photoURL || ''}
+                                alt={user.displayName || ''}
+                                className="w-8 h-8 rounded-full border border-blue-500/50"
+                            />
+                            <button
+                                onClick={logout}
+                                className="text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                            >
+                                Çıkış
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={loginWithGoogle}
+                            className="bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-4 py-1.5 rounded-lg text-sm font-bold transition-all border border-blue-500/20"
+                        >
+                            Giriş Yap
+                        </button>
+                    )}
                 </div>
 
                 {/* Mobile Menu Button */}
@@ -63,7 +89,26 @@ export default function Navbar() {
                             {link.name}
                         </Link>
                     ))}
-
+                    {user ? (
+                        <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <img
+                                    src={user.photoURL || ''}
+                                    className="w-10 h-10 rounded-full border border-blue-500/50"
+                                    alt=""
+                                />
+                                <span className="text-slate-200 font-medium line-clamp-1">{user.displayName}</span>
+                            </div>
+                            <button onClick={logout} className="text-red-400 font-medium shrink-0">Çıkış</button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => { loginWithGoogle(); setIsOpen(false); }}
+                            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mt-4 shadow-lg shadow-blue-600/20"
+                        >
+                            Google ile Giriş Yap
+                        </button>
+                    )}
                 </div>
             )}
         </nav>

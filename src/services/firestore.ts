@@ -8,6 +8,7 @@ import {
     getDocs,
     doc,
     getDoc,
+    setDoc,
     addDoc,
     updateDoc,
     deleteDoc,
@@ -91,5 +92,32 @@ export const hadithService = {
     async toggleLike(id: string, amount: number) {
         const docRef = doc(db, HADITH_COLLECTION, id);
         return await updateDoc(docRef, { likeSayisi: increment(amount) });
+    },
+
+    // Public: User Like Management
+    async hasUserLiked(hadithId: string, userId: string) {
+        const likeRef = doc(db, 'likes', `${userId}_${hadithId}`);
+        const likeSnap = await getDoc(likeRef);
+        return likeSnap.exists();
+    },
+
+    async toggleLikeWithUser(hadithId: string, userId: string) {
+        const likeRef = doc(db, 'likes', `${userId}_${hadithId}`);
+        const hadithRef = doc(db, HADITH_COLLECTION, hadithId);
+        const likeSnap = await getDoc(likeRef);
+
+        if (likeSnap.exists()) {
+            await deleteDoc(likeRef);
+            await updateDoc(hadithRef, { likeSayisi: increment(-1) });
+            return false; // Result is unliked
+        } else {
+            await setDoc(likeRef, {
+                userId,
+                hadithId,
+                createdAt: serverTimestamp()
+            });
+            await updateDoc(hadithRef, { likeSayisi: increment(1) });
+            return true; // Result is liked
+        }
     }
 };

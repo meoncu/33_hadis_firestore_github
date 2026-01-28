@@ -2,9 +2,12 @@
 
 import { Hadith } from '@/types/hadith';
 import { motion } from 'framer-motion';
-import { Share2, Heart, BookOpen, User, Hash } from 'lucide-react';
+import { Share2, Heart, BookOpen, User, Hash, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn, getProxyUrl } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { hadithService } from '@/services/firestore';
+import { useState, useEffect } from 'react';
 
 interface HadithCardProps {
     hadith: Hadith;
@@ -12,7 +15,47 @@ interface HadithCardProps {
 }
 
 export default function HadithCard({ hadith, className }: HadithCardProps) {
-    const handleShare = async () => {
+    const { user, loginWithGoogle } = useAuth();
+    const [isLiked, setIsLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(hadith.likeSayisi || 0);
+    const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+    useEffect(() => {
+        if (user && hadith.id) {
+            hadithService.hasUserLiked(hadith.id, user.uid).then(setIsLiked);
+        } else {
+            setIsLiked(false);
+        }
+    }, [user, hadith.id]);
+
+    const handleLike = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!user) {
+            if (confirm('Hadisleri beğenmek için giriş yapmalısınız. Giriş yapmak ister misiniz?')) {
+                loginWithGoogle();
+            }
+            return;
+        }
+
+        if (!hadith.id || isLikeLoading) return;
+
+        setIsLikeLoading(true);
+        try {
+            const liked = await hadithService.toggleLikeWithUser(hadith.id, user.uid);
+            setIsLiked(liked);
+            setLikeCount(prev => liked ? prev + 1 : prev - 1);
+        } catch (error) {
+            console.error('Like error:', error);
+        } finally {
+            setIsLikeLoading(false);
+        }
+    };
+
+    const handleShare = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
         const shareData = {
             title: 'Bir Hadis',
             text: `${hadith.metin}\n\nKaynak: ${hadith.kaynak}\nRavi: ${hadith.ravi}`,
@@ -90,9 +133,20 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
             {/* Footer Actions */}
             <div className="px-6 py-4 border-t border-slate-800/50 flex items-center justify-between bg-slate-900/40">
                 <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-1.5 text-slate-400 hover:text-red-400 transition-colors group/heart">
-                        <Heart size={18} className="group-hover/heart:fill-red-400" />
-                        <span className="text-sm font-medium">{hadith.likeSayisi || 0}</span>
+                    <button
+                        onClick={handleLike}
+                        disabled={isLikeLoading}
+                        className={cn(
+                            "flex items-center gap-1.5 transition-all group/heart active:scale-90",
+                            isLiked ? "text-red-500 scale-110" : "text-slate-400 hover:text-red-400"
+                        )}
+                    >
+                        {isLikeLoading ? (
+                            <Loader2 size={18} className="animate-spin text-slate-500" />
+                        ) : (
+                            <Heart size={18} className={cn(isLiked && "fill-current")} />
+                        )}
+                        <span className="text-sm font-bold tracking-tight">{likeCount}</span>
                     </button>
                     <button
                         onClick={handleShare}

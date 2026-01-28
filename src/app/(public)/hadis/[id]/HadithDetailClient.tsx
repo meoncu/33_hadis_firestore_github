@@ -5,6 +5,10 @@ import { Loader2, ArrowLeft, Share2, Heart, BookOpen, Quote, Hash, User } from '
 import { formatDate, getProxyUrl } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { hadithService } from '@/services/firestore';
+import { cn } from '@/lib/utils';
 
 interface HadithDetailClientProps {
     hadith: Hadith;
@@ -12,6 +16,40 @@ interface HadithDetailClientProps {
 
 export default function HadithDetailClient({ hadith }: HadithDetailClientProps) {
     const router = useRouter();
+    const { user, loginWithGoogle } = useAuth();
+    const [isLiked, setIsLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(hadith.likeSayisi || 0);
+    const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+    useEffect(() => {
+        if (user && hadith.id) {
+            hadithService.hasUserLiked(hadith.id, user.uid).then(setIsLiked);
+        } else {
+            setIsLiked(false);
+        }
+    }, [user, hadith.id]);
+
+    const handleLike = async () => {
+        if (!user) {
+            if (confirm('Hadisleri beğenmek için giriş yapmalısınız. Giriş yapmak ister misiniz?')) {
+                loginWithGoogle();
+            }
+            return;
+        }
+
+        if (!hadith.id || isLikeLoading) return;
+
+        setIsLikeLoading(true);
+        try {
+            const liked = await hadithService.toggleLikeWithUser(hadith.id, user.uid);
+            setIsLiked(liked);
+            setLikeCount(prev => liked ? prev + 1 : prev - 1);
+        } catch (error) {
+            console.error('Like error:', error);
+        } finally {
+            setIsLikeLoading(false);
+        }
+    };
 
     const handleShare = async () => {
         const shareData = {
@@ -123,9 +161,20 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
 
                         <div className="mt-12 flex flex-col md:flex-row md:items-center justify-between gap-6 border-t border-slate-800 pt-8">
                             <div className="flex items-center gap-8">
-                                <button className="flex items-center gap-2.5 text-slate-400 hover:text-red-400 transition-colors group/heart">
-                                    <Heart size={28} className="group-hover/heart:fill-red-400" />
-                                    <span className="text-xl font-bold">{hadith.likeSayisi || 0}</span>
+                                <button
+                                    onClick={handleLike}
+                                    disabled={isLikeLoading}
+                                    className={cn(
+                                        "flex items-center gap-2.5 transition-all active:scale-90",
+                                        isLiked ? "text-red-500" : "text-slate-400 hover:text-red-400"
+                                    )}
+                                >
+                                    {isLikeLoading ? (
+                                        <Loader2 size={28} className="animate-spin text-slate-500" />
+                                    ) : (
+                                        <Heart size={28} className={cn(isLiked && "fill-current")} />
+                                    )}
+                                    <span className="text-xl font-bold">{likeCount}</span>
                                 </button>
                                 <div className="h-8 w-[1px] bg-slate-800 hidden md:block" />
                                 <div className="text-slate-500">
