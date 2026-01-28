@@ -159,6 +159,7 @@ export default function AdminDashboard() {
                         <div className="w-full max-w-2xl">
                             <HadithForm
                                 initialData={editingHadith || undefined}
+                                suggestedSiraNo={Math.max(0, ...hadiths.map(h => h.siraNo || 0)) + 1}
                                 onSubmit={handleSubmit}
                                 onCancel={() => { setIsFormOpen(false); setEditingHadith(null); }}
                                 isLoading={loading}

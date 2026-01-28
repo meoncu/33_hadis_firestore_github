@@ -24,12 +24,13 @@ const schema = z.object({
 
 interface HadithFormProps {
     initialData?: Hadith;
+    suggestedSiraNo?: number;
     onSubmit: (data: any) => Promise<void>;
     onCancel: () => void;
     isLoading?: boolean;
 }
 
-export default function HadithForm({ initialData, onSubmit, onCancel, isLoading: parentLoading }: HadithFormProps) {
+export default function HadithForm({ initialData, suggestedSiraNo, onSubmit, onCancel, isLoading: parentLoading }: HadithFormProps) {
     const [uploading, setUploading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.resimUrl || null);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export default function HadithForm({ initialData, onSubmit, onCancel, isLoading:
             kategori: initialData?.kategori || 'Ahlak',
             yayinDurumu: initialData?.yayinDurumu || 'draft',
             dil: initialData?.dil || 'TR',
-            siraNo: initialData?.siraNo?.toString() || '',
+            siraNo: initialData?.siraNo?.toString() || suggestedSiraNo?.toString() || '',
             resimUrl: initialData?.resimUrl || '',
         },
     });
