@@ -19,18 +19,21 @@ import {
     Activity,
     MessageSquare,
     ExternalLink,
-    CheckCircle
+    CheckCircle,
+    AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 import { hadithService, userService, reportService } from '@/services/firestore';
 import { formatDate } from '@/lib/utils';
+import { getUnusedImagesAction, deleteImageAction } from '../actions';
 
 export default function AdminDashboard() {
     const { user, loading: authLoading, logout, loginWithGoogle } = useAuth();
     const [hadiths, setHadiths] = useState<Hadith[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [reports, setReports] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'hadiths' | 'users' | 'reports'>('hadiths');
+    const [unusedImages, setUnusedImages] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'hadiths' | 'users' | 'reports' | 'media'>('hadiths');
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingHadith, setEditingHadith] = useState<Hadith | null>(null);
@@ -70,11 +73,24 @@ export default function AdminDashboard() {
         }
     };
 
+    const fetchAllUnusedImages = async () => {
+        setLoading(true);
+        try {
+            const result = await getUnusedImagesAction();
+            if (result.success) {
+                setUnusedImages(result.unusedFiles || []);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (user) {
             if (activeTab === 'hadiths') fetchAll();
             else if (activeTab === 'users') fetchAllUsers();
-            else fetchAllReports();
+            else if (activeTab === 'reports') fetchAllReports();
+            else fetchAllUnusedImages();
         }
     }, [user, activeTab]);
 
@@ -190,8 +206,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('hadiths')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'hadiths'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                : 'text-slate-500 hover:text-slate-300'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                            : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
                         <ImageIcon size={18} />
@@ -200,8 +216,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('users')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'users'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                : 'text-slate-500 hover:text-slate-300'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                            : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
                         <Users size={18} />
@@ -210,12 +226,22 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('reports')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'reports'
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                : 'text-slate-500 hover:text-slate-300'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                            : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
                         <MessageSquare size={18} />
                         Bildirimler ({reports.filter(r => r.status === 'pending').length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('media')}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'media'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                            : 'text-slate-500 hover:text-slate-300'
+                            }`}
+                    >
+                        <ImageIcon size={18} />
+                        Medya Temizliği ({unusedImages.length})
                     </button>
                 </div>
 
@@ -234,7 +260,7 @@ export default function AdminDashboard() {
                     </div>
                 )}
 
-                {/* Content Table */}
+                {/* Content Section */}
                 <div className="glass-card overflow-hidden border border-slate-800/50 shadow-2xl">
                     {activeTab === 'hadiths' ? (
                         <div className="overflow-x-auto">
@@ -362,7 +388,7 @@ export default function AdminDashboard() {
                                 </tbody>
                             </table>
                         </div>
-                    ) : (
+                    ) : activeTab === 'reports' ? (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
@@ -403,8 +429,8 @@ export default function AdminDashboard() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${r.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
-                                                        r.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
-                                                            'bg-slate-800 text-slate-500'
+                                                    r.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                                                        'bg-slate-800 text-slate-500'
                                                     }`}>
                                                     {r.status === 'pending' ? 'Bekliyor' : r.status === 'resolved' ? 'Çözüldü' : 'Görmezden Gelindi'}
                                                 </span>
@@ -442,16 +468,80 @@ export default function AdminDashboard() {
                                 </tbody>
                             </table>
                         </div>
-                    )}
-
-                    {((activeTab === 'hadiths' && hadiths.length === 0) || (activeTab === 'users' && users.length === 0) || (activeTab === 'reports' && reports.length === 0)) && !loading && (
-                        <div className="py-24 text-center">
-                            <div className="inline-flex p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-600 mb-4">
-                                <Search size={32} />
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <div className="p-4 bg-amber-500/10 border-b border-slate-800 flex items-center gap-3">
+                                <AlertTriangle className="text-amber-500" size={20} />
+                                <p className="text-sm text-amber-200/80">
+                                    Aşağıdaki dosyalar R2 sunucusunda bulunuyor ancak herhangi bir hadis tarafından kullanılmıyor.
+                                    Bunları silerek depolama alanınızı temizleyebilirsiniz.
+                                </p>
+                                <button
+                                    onClick={fetchAllUnusedImages}
+                                    className="ml-auto text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg border border-slate-700 transition-colors"
+                                >
+                                    Listeyi Yenile
+                                </button>
                             </div>
-                            <p className="text-slate-500">Gösterilecek öğe bulunamadı.</p>
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs uppercase tracking-widest">
+                                        <th className="px-6 py-4 font-semibold">ÖNİZLEME</th>
+                                        <th className="px-6 py-4 font-semibold">DOSYA ADI / KEY</th>
+                                        <th className="px-6 py-4 font-semibold">BOYUT</th>
+                                        <th className="px-6 py-4 font-semibold">TARİH</th>
+                                        <th className="px-6 py-4 font-semibold text-right">İŞLEMLER</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/50">
+                                    {unusedImages.map((img) => (
+                                        <tr key={img.key} className="hover:bg-red-500/[0.03] transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div className="w-16 h-12 rounded overflow-hidden border border-slate-700 bg-slate-800">
+                                                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-slate-300 text-xs font-mono">{img.key}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-slate-500 text-xs">{(img.size / 1024).toFixed(1)} KB</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-500 text-xs">
+                                                {img.lastModified ? new Date(img.lastModified).toLocaleDateString('tr-TR') : '-'}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button
+                                                    onClick={async () => {
+                                                        if (confirm('Bu dosyayı R2 sunucusundan TAMAMEN SİLMEK istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+                                                            const res = await deleteImageAction(img.key);
+                                                            if (res.success) fetchAllUnusedImages();
+                                                        }
+                                                    }}
+                                                    className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                    title="Sunucudan Sil"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
+
+                    {((activeTab === 'hadiths' && hadiths.length === 0) ||
+                        (activeTab === 'users' && users.length === 0) ||
+                        (activeTab === 'reports' && reports.length === 0) ||
+                        (activeTab === 'media' && unusedImages.length === 0)) && !loading && (
+                            <div className="py-24 text-center">
+                                <div className="inline-flex p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-600 mb-4">
+                                    <Search size={32} />
+                                </div>
+                                <p className="text-slate-500">Gösterilecek öğe bulunamadı.</p>
+                            </div>
+                        )}
                 </div>
             </div>
         </div>
