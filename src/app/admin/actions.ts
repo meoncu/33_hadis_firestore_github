@@ -26,44 +26,52 @@ export async function uploadImageAction(formData: FormData) {
     }
 }
 
-export async function getUnusedImagesAction() {
+export async function getMediaAnalysisAction() {
     try {
         // 1. R2'den tüm dosyaları çek
         const r2Files = await listR2Files();
 
-        // 2. DB'den tüm hadisleri çek (Resim URL'lerini toplamak için)
-        // Not: Tüm hadisleri çekiyoruz çünkü sayı muhtemelen çok fazla değil (1000'den az)
+        // 2. DB'den tüm hadisleri çek
         const { data: allHadiths } = await hadithService.getHadiths({ pageSize: 1000, includeDrafts: true });
 
-        const usedImageUrls = new Set(
-            allHadiths
-                .map(h => h.resimUrl)
-                .filter(url => !!url)
-                .map(url => {
-                    // URL'den sadece dosya adını çek (örn: ...)
-                    try {
-                        const parts = url!.split('/');
-                        return parts[parts.length - 1];
-                    } catch {
-                        return null;
-                    }
-                })
-        );
+        // Resim bazlı bir eşleştirme haritası oluştur
+        const usageMap = new Map<string, { id: string; siraNo?: number }[]>();
 
-        // 3. Kullanılmayanları filtrele
-        const unusedFiles = r2Files.filter(file => !usedImageUrls.has(file.key));
+        allHadiths.forEach(h => {
+            if (h.resimUrl) {
+                try {
+                    const parts = h.resimUrl.split('/');
+                    const fileName = parts[parts.length - 1];
+                    if (!usageMap.has(fileName)) {
+                        usageMap.set(fileName, []);
+                    }
+                    usageMap.get(fileName)!.push({ id: h.id!, siraNo: h.siraNo });
+                } catch { }
+            }
+        });
+
+        // 3. Tüm dosyaları analiz et
+        const analyzedFiles = r2Files.map(file => {
+            const linkedHadiths = usageMap.get(file.key) || [];
+            return {
+                key: file.key,
+                size: file.size,
+                lastModified: file.lastModified,
+                url: `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${file.key}`,
+                isUsed: linkedHadiths.length > 0,
+                linkedHadiths // [{id, siraNo}, ...]
+            };
+        });
+
+        // Kullanılmayanlar önce gelsin diye sıralayabiliriz
+        analyzedFiles.sort((a, b) => (a.isUsed === b.isUsed ? 0 : a.isUsed ? 1 : -1));
 
         return {
             success: true,
-            unusedFiles: unusedFiles.map(f => ({
-                key: f.key,
-                size: f.size,
-                lastModified: f.lastModified,
-                url: `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${f.key}`
-            }))
+            files: analyzedFiles
         };
     } catch (error: any) {
-        console.error('Check Unused Images Error:', error);
+        console.error('Media Analysis Error:', error);
         return { success: false, error: error.message };
     }
 }

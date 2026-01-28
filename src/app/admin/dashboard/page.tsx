@@ -20,19 +20,21 @@ import {
     MessageSquare,
     ExternalLink,
     CheckCircle,
-    AlertTriangle
+    AlertTriangle,
+    FileImage,
+    Link2
 } from 'lucide-react';
 import Link from 'next/link';
 import { hadithService, userService, reportService } from '@/services/firestore';
 import { formatDate } from '@/lib/utils';
-import { getUnusedImagesAction, deleteImageAction } from '../actions';
+import { getMediaAnalysisAction, deleteImageAction } from '../actions';
 
 export default function AdminDashboard() {
     const { user, loading: authLoading, logout, loginWithGoogle } = useAuth();
     const [hadiths, setHadiths] = useState<Hadith[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [reports, setReports] = useState<any[]>([]);
-    const [unusedImages, setUnusedImages] = useState<any[]>([]);
+    const [mediaFiles, setMediaFiles] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'hadiths' | 'users' | 'reports' | 'media'>('hadiths');
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -73,12 +75,12 @@ export default function AdminDashboard() {
         }
     };
 
-    const fetchAllUnusedImages = async () => {
+    const fetchMediaAnalysis = async () => {
         setLoading(true);
         try {
-            const result = await getUnusedImagesAction();
+            const result = await getMediaAnalysisAction();
             if (result.success) {
-                setUnusedImages(result.unusedFiles || []);
+                setMediaFiles(result.files || []);
             }
         } finally {
             setLoading(false);
@@ -90,7 +92,7 @@ export default function AdminDashboard() {
             if (activeTab === 'hadiths') fetchAll();
             else if (activeTab === 'users') fetchAllUsers();
             else if (activeTab === 'reports') fetchAllReports();
-            else fetchAllUnusedImages();
+            else fetchMediaAnalysis();
         }
     }, [user, activeTab]);
 
@@ -177,7 +179,6 @@ export default function AdminDashboard() {
     return (
         <div className="min-h-screen bg-[#050a14] p-6 lg:p-12">
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-white mb-2 font-outfit">Yönetim Paneli</h1>
@@ -201,7 +202,6 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* Tabs */}
                 <div className="flex gap-2 mb-8 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 w-fit overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('hadiths')}
@@ -240,12 +240,11 @@ export default function AdminDashboard() {
                             : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
-                        <ImageIcon size={18} />
-                        Medya Temizliği ({unusedImages.length})
+                        <FileImage size={18} />
+                        Medya Yönetimi ({mediaFiles.length})
                     </button>
                 </div>
 
-                {/* Form Modal */}
                 {isFormOpen && (
                     <div className="fixed inset-0 z-[100] bg-[#050a14]/90 backdrop-blur-md flex items-center justify-center p-6">
                         <div className="w-full max-w-2xl">
@@ -260,7 +259,6 @@ export default function AdminDashboard() {
                     </div>
                 )}
 
-                {/* Content Section */}
                 <div className="glass-card overflow-hidden border border-slate-800/50 shadow-2xl">
                     {activeTab === 'hadiths' ? (
                         <div className="overflow-x-auto">
@@ -470,59 +468,105 @@ export default function AdminDashboard() {
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <div className="p-4 bg-amber-500/10 border-b border-slate-800 flex items-center gap-3">
-                                <AlertTriangle className="text-amber-500" size={20} />
-                                <p className="text-sm text-amber-200/80">
-                                    Aşağıdaki dosyalar R2 sunucusunda bulunuyor ancak herhangi bir hadis tarafından kullanılmıyor.
-                                    Bunları silerek depolama alanınızı temizleyebilirsiniz.
-                                </p>
+                            <div className="p-4 bg-slate-900/80 border-b border-slate-800 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                    <FileImage size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-white">Medya Analizi</p>
+                                    <p className="text-xs text-slate-400">
+                                        R2 üzerindeki tüm resimler ve hangi hadislerde kullanıldıkları listelenmektedir.
+                                    </p>
+                                </div>
                                 <button
-                                    onClick={fetchAllUnusedImages}
-                                    className="ml-auto text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg border border-slate-700 transition-colors"
+                                    onClick={fetchMediaAnalysis}
+                                    className="ml-auto text-xs bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl border border-slate-700 transition-all font-bold"
                                 >
-                                    Listeyi Yenile
+                                    Analizi Yenile
                                 </button>
                             </div>
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs uppercase tracking-widest">
                                         <th className="px-6 py-4 font-semibold">ÖNİZLEME</th>
-                                        <th className="px-6 py-4 font-semibold">DOSYA ADI / KEY</th>
-                                        <th className="px-6 py-4 font-semibold">BOYUT</th>
-                                        <th className="px-6 py-4 font-semibold">TARİH</th>
+                                        <th className="px-6 py-4 font-semibold">DOSYA BİLGİSİ</th>
+                                        <th className="px-6 py-4 font-semibold text-center">DURUM</th>
+                                        <th className="px-6 py-4 font-semibold">BAĞLI HADİS(LER)</th>
                                         <th className="px-6 py-4 font-semibold text-right">İŞLEMLER</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800/50">
-                                    {unusedImages.map((img) => (
-                                        <tr key={img.key} className="hover:bg-red-500/[0.03] transition-colors group">
+                                    {mediaFiles.map((img) => (
+                                        <tr key={img.key} className={`transition-colors group ${!img.isUsed ? 'hover:bg-red-500/[0.03]' : 'hover:bg-blue-500/[0.03]'}`}>
                                             <td className="px-6 py-4">
-                                                <div className="w-16 h-12 rounded overflow-hidden border border-slate-700 bg-slate-800">
+                                                <div className="w-20 h-16 rounded-xl overflow-hidden border border-slate-700 bg-slate-800 group-hover:border-slate-500 transition-colors">
                                                     <img src={img.url} alt="" className="w-full h-full object-cover" />
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="text-slate-300 text-xs font-mono">{img.key}</span>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="text-slate-300 text-xs font-mono line-clamp-1 max-w-[200px]" title={img.key}>{img.key}</span>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[10px] text-slate-500 font-bold">{(img.size / 1024).toFixed(1)} KB</span>
+                                                        <span className="text-[10px] text-slate-600">
+                                                            {img.lastModified ? new Date(img.lastModified).toLocaleDateString('tr-TR') : '-'}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="text-slate-500 text-xs">{(img.size / 1024).toFixed(1)} KB</span>
+                                                <div className="flex justify-center">
+                                                    {img.isUsed ? (
+                                                        <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20 flex items-center gap-1.5">
+                                                            <CheckCircle size={12} />
+                                                            KULLANILIYOR
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold border border-red-500/20 flex items-center gap-1.5">
+                                                            <AlertTriangle size={12} />
+                                                            KULLANILMIYOR
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-500 text-xs">
-                                                {img.lastModified ? new Date(img.lastModified).toLocaleDateString('tr-TR') : '-'}
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {img.isUsed ? (
+                                                        img.linkedHadiths.map((h: any) => (
+                                                            <Link
+                                                                key={h.id}
+                                                                href={`/hadis/${h.id}`}
+                                                                target="_blank"
+                                                                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 text-[10px] font-bold border border-blue-500/20 hover:bg-blue-500/20 transition-all"
+                                                            >
+                                                                <Link2 size={10} />
+                                                                Hadis #{h.siraNo || 'ID'}
+                                                            </Link>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-slate-600 text-[10px] italic">Hiçbir hadise bağlı değil</span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={async () => {
-                                                        if (confirm('Bu dosyayı R2 sunucusundan TAMAMEN SİLMEK istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-                                                            const res = await deleteImageAction(img.key);
-                                                            if (res.success) fetchAllUnusedImages();
-                                                        }
-                                                    }}
-                                                    className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                    title="Sunucudan Sil"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                {!img.isUsed ? (
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (confirm('Bu kullanılmayan dosyayı R2 sunucusundan TAMAMEN SİLMEK istediğinize emin misiniz?')) {
+                                                                const res = await deleteImageAction(img.key);
+                                                                if (res.success) fetchMediaAnalysis();
+                                                            }
+                                                        }}
+                                                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                        title="Sunucudan Sil"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                ) : (
+                                                    <div className="p-2 text-slate-700 cursor-not-allowed" title="Kullanılan dosya silinemez">
+                                                        <Trash2 size={18} />
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -534,7 +578,7 @@ export default function AdminDashboard() {
                     {((activeTab === 'hadiths' && hadiths.length === 0) ||
                         (activeTab === 'users' && users.length === 0) ||
                         (activeTab === 'reports' && reports.length === 0) ||
-                        (activeTab === 'media' && unusedImages.length === 0)) && !loading && (
+                        (activeTab === 'media' && mediaFiles.length === 0)) && !loading && (
                             <div className="py-24 text-center">
                                 <div className="inline-flex p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-600 mb-4">
                                     <Search size={32} />
