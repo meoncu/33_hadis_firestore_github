@@ -30,21 +30,21 @@ export function useAuth() {
 
     const loginWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
-        // Prompting for account selection to avoid auto-closing in some cached states
         provider.setCustomParameters({ prompt: 'select_account' });
 
         try {
-            console.log("Firebase Config check:", {
-                apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "Defined" : "MISSING",
-                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? "Defined" : "MISSING"
-            });
-            console.log("Starting Google Login...");
             const result = await signInWithPopup(auth, provider);
-            console.log("Login Success:", result.user.email);
-            router.push('/admin/dashboard');
+
+            // Eğer giriş yapan admin ise panele gönder, değilse olduğu yerde kalsın (beğeni yapabilmesi için)
+            if (result.user.email === 'meoncu@gmail.com') {
+                router.push('/admin/dashboard');
+            } else {
+                // Normal kullanıcılar için sayfayı yenilemek veya olduğu yerde bırakmak yeterli
+                console.log("Normal kullanıcı girişi başarılı:", result.user.email);
+            }
         } catch (error: any) {
-            console.error('Login error detail:', error.code, error.message);
-            alert(`Giriş hatası: ${error.message}\nKod: ${error.code}`);
+            console.error('Login error:', error);
+            alert(`Giriş hatası: ${error.message}`);
         }
     };
 
