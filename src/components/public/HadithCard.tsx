@@ -161,6 +161,13 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                         >
                             <AlertTriangle size={18} />
                         </button>
+                        <button
+                            onClick={handleShare}
+                            className="p-1.5 text-slate-500 hover:text-blue-400 transition-colors"
+                            title="Paylaş"
+                        >
+                            <Share2 size={18} />
+                        </button>
                     </div>
 
                     <Link
