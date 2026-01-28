@@ -75,7 +75,13 @@ export default function HadithForm({ initialData, onSubmit, onCancel, isLoading:
             if (result.success && result.url) {
                 setValue('resimUrl', result.url);
                 setPreviewUrl(result.url);
-                console.log('R2 Yükleme Başarılı:', result.url);
+
+                if ((result as any).alreadyExists) {
+                    console.log('Sunucuda mevcut dosya bulundu, o kullanılıyor:', result.url);
+                    alert('Bu resim zaten sunucuda mevcut. Mevcut olan kullanıma alındı.');
+                } else {
+                    console.log('R2 Yükleme Başarılı:', result.url);
+                }
             } else {
                 setUploadError(result.error || 'Yükleme başarısız oldu');
                 setPreviewUrl(initialData?.resimUrl || null);
