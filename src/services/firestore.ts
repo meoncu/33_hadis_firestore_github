@@ -108,40 +108,48 @@ export const hadithService = {
         const userRef = doc(db, 'users', userId);
 
         return await runTransaction(db, async (transaction) => {
+            // Önce tüm gerekli dokümanları OKUYORUZ (Firestore Transaction kuralıdır)
             const likeSnap = await transaction.get(likeRef);
             const userSnap = await transaction.get(userRef);
 
-            // Eğer kullanıcı dökümanı yoksa (nadir durum), önce oluştur
-            if (!userSnap.exists()) {
-                transaction.set(userRef, {
-                    uid: userId,
-                    totalLikes: 0,
-                    joinedAt: serverTimestamp(),
-                    lastLogin: serverTimestamp(),
-                    lastActivity: serverTimestamp()
-                }, { merge: true });
-            }
-
             if (likeSnap.exists()) {
+                // Beğeniyi kaldır
                 transaction.delete(likeRef);
                 transaction.update(hadithRef, { likeSayisi: increment(-1) });
-                transaction.update(userRef, {
-                    totalLikes: increment(-1),
-                    lastActivity: serverTimestamp()
-                });
-                return false; // unliked
+
+                if (userSnap.exists()) {
+                    transaction.update(userRef, {
+                        totalLikes: increment(-1),
+                        lastActivity: serverTimestamp()
+                    });
+                }
+                return false;
             } else {
+                // Beğeni ekle
                 transaction.set(likeRef, {
                     userId,
                     hadithId,
                     createdAt: serverTimestamp()
                 });
+
                 transaction.update(hadithRef, { likeSayisi: increment(1) });
-                transaction.update(userRef, {
-                    totalLikes: increment(1),
-                    lastActivity: serverTimestamp()
-                });
-                return true; // liked
+
+                if (!userSnap.exists()) {
+                    transaction.set(userRef, {
+                        uid: userId,
+                        totalLikes: 1,
+                        joinedAt: serverTimestamp(),
+                        lastLogin: serverTimestamp(),
+                        lastActivity: serverTimestamp(),
+                        role: 'user'
+                    });
+                } else {
+                    transaction.update(userRef, {
+                        totalLikes: increment(1),
+                        lastActivity: serverTimestamp()
+                    });
+                }
+                return true;
             }
         });
     }
