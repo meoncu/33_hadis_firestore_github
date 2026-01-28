@@ -1,14 +1,28 @@
 'use client';
 
 import { Hadith } from '@/types/hadith';
-import { Loader2, ArrowLeft, Share2, Heart, BookOpen, Quote, Hash, User } from 'lucide-react';
 import { formatDate, getProxyUrl } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import {
+    Share2,
+    Heart,
+    MessageCircle,
+    ArrowLeft,
+    Loader2,
+    Calendar,
+    AlertTriangle,
+    Eye,
+    Hash,
+    Quote,
+    User,
+    BookOpen
+} from 'lucide-react';
 import { hadithService } from '@/services/firestore';
 import { cn } from '@/lib/utils';
+import ReportModal from '@/components/public/ReportModal';
 
 interface HadithDetailClientProps {
     hadith: Hadith;
@@ -20,6 +34,7 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(hadith.likeSayisi || 0);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     useEffect(() => {
         if (user && hadith.id) {
@@ -183,14 +198,32 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
                                     <span className="ml-2 text-sm uppercase tracking-wide">Görüntülenme</span>
                                 </div>
                             </div>
-                            <button onClick={handleShare} className="btn-primary w-full md:w-auto px-10 py-4 text-lg">
-                                <Share2 size={22} />
-                                Paylaş
-                            </button>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={handleShare}
+                                    className="p-3 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 rounded-2xl transition-all active:scale-95"
+                                    title="Paylaş"
+                                >
+                                    <Share2 size={24} />
+                                </button>
+                                <button
+                                    onClick={() => setIsReportModalOpen(true)}
+                                    className="p-3 bg-slate-800 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-2xl transition-all active:scale-95"
+                                    title="Hata Bildir"
+                                >
+                                    <AlertTriangle size={24} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </motion.article>
             </div>
+
+            <ReportModal
+                hadith={hadith}
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+            />
         </main>
     );
 }

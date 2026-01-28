@@ -16,16 +16,21 @@ import {
     Users,
     Heart,
     Calendar,
-    Activity
+    Activity,
+    MessageSquare,
+    ExternalLink,
+    CheckCircle
 } from 'lucide-react';
-import { hadithService, userService } from '@/services/firestore';
+import Link from 'next/link';
+import { hadithService, userService, reportService } from '@/services/firestore';
 import { formatDate } from '@/lib/utils';
 
 export default function AdminDashboard() {
     const { user, loading: authLoading, logout, loginWithGoogle } = useAuth();
     const [hadiths, setHadiths] = useState<Hadith[]>([]);
     const [users, setUsers] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'hadiths' | 'users'>('hadiths');
+    const [reports, setReports] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'hadiths' | 'users' | 'reports'>('hadiths');
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingHadith, setEditingHadith] = useState<Hadith | null>(null);
@@ -34,7 +39,6 @@ export default function AdminDashboard() {
         setLoading(true);
         try {
             const result = await hadithService.getHadiths({ pageSize: 120, includeDrafts: true });
-            // Sort by siraNo primarily
             const sortedData = result.data.sort((a, b) => {
                 const siraA = a.siraNo || Number.MAX_SAFE_INTEGER;
                 const siraB = b.siraNo || Number.MAX_SAFE_INTEGER;
@@ -56,10 +60,21 @@ export default function AdminDashboard() {
         }
     };
 
+    const fetchAllReports = async () => {
+        setLoading(true);
+        try {
+            const result = await reportService.getReports();
+            setReports(result);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (user) {
             if (activeTab === 'hadiths') fetchAll();
-            else fetchAllUsers();
+            else if (activeTab === 'users') fetchAllUsers();
+            else fetchAllReports();
         }
     }, [user, activeTab]);
 
@@ -67,7 +82,6 @@ export default function AdminDashboard() {
 
     if (authLoading) return <div className="p-20 text-center text-slate-400">Yükleniyor...</div>;
 
-    // Eğer kimse giriş yapmamışsa veya giriş yapan kişi SİZ değilseniz erişimi kapat
     if (!user || user.email !== ADMIN_EMAIL) return (
         <div className="min-h-screen bg-[#050a14] flex flex-col items-center justify-center p-6 text-center">
             <div className="glass-card p-12 border border-slate-800 shadow-2xl flex flex-col items-center gap-6 max-w-lg">
@@ -110,8 +124,6 @@ export default function AdminDashboard() {
         setLoading(true);
         try {
             let finalData = { ...data };
-
-            // Image status is set to ready if a URL is provided
             if (finalData.resimUrl) {
                 finalData.resimDurumu = 'ready';
             } else {
@@ -138,7 +150,6 @@ export default function AdminDashboard() {
     const handleDelete = async (id: string) => {
         if (confirm('Bu hadisi silmek istediğinize emin misiniz?')) {
             try {
-                // No need to delete images from external URLs
                 await hadithService.deleteHadith(id);
                 await fetchAll();
             } catch (error) {
@@ -175,12 +186,12 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-8 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 w-fit">
+                <div className="flex gap-2 mb-8 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 w-fit overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('hadiths')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'hadiths'
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                            : 'text-slate-500 hover:text-slate-300'
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'hadiths'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
                         <ImageIcon size={18} />
@@ -188,13 +199,23 @@ export default function AdminDashboard() {
                     </button>
                     <button
                         onClick={() => setActiveTab('users')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'users'
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                            : 'text-slate-500 hover:text-slate-300'
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'users'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
                         <Users size={18} />
                         Kullanıcılar ({users.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('reports')}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'reports'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                : 'text-slate-500 hover:text-slate-300'
+                            }`}
+                    >
+                        <MessageSquare size={18} />
+                        Bildirimler ({reports.filter(r => r.status === 'pending').length})
                     </button>
                 </div>
 
@@ -293,7 +314,7 @@ export default function AdminDashboard() {
                                 </tbody>
                             </table>
                         </div>
-                    ) : (
+                    ) : activeTab === 'users' ? (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
@@ -341,9 +362,89 @@ export default function AdminDashboard() {
                                 </tbody>
                             </table>
                         </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs uppercase tracking-widest">
+                                        <th className="px-6 py-4 font-semibold">GÖNDEREN / TARİH</th>
+                                        <th className="px-6 py-4 font-semibold">HADİS BİLGİSİ</th>
+                                        <th className="px-6 py-4 font-semibold">KULLANICI NOTU</th>
+                                        <th className="px-6 py-4 font-semibold">DURUM</th>
+                                        <th className="px-6 py-4 font-semibold text-right">İŞLEMLER</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/50">
+                                    {reports.map((r) => (
+                                        <tr key={r.id} className="hover:bg-blue-500/[0.03] transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-slate-200 font-bold">{r.userName}</span>
+                                                    <span className="text-slate-500 text-[10px] uppercase font-mono">{r.userEmail}</span>
+                                                    <span className="text-slate-600 text-[10px] mt-1">{formatDate(r.createdAt)}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="max-w-xs">
+                                                    <p className="text-slate-400 text-xs italic line-clamp-2">"{r.hadithText}"</p>
+                                                    <Link
+                                                        href={`/hadis/${r.hadithId}`}
+                                                        target="_blank"
+                                                        className="text-blue-500 text-[10px] font-bold flex items-center gap-1 mt-1 hover:underline"
+                                                    >
+                                                        Hadise Git <ExternalLink size={10} />
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="bg-amber-500/5 border border-amber-500/10 p-3 rounded-xl text-slate-300 text-sm max-w-sm">
+                                                    {r.note}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${r.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+                                                        r.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                                                            'bg-slate-800 text-slate-500'
+                                                    }`}>
+                                                    {r.status === 'pending' ? 'Bekliyor' : r.status === 'resolved' ? 'Çözüldü' : 'Görmezden Gelindi'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-1">
+                                                    {r.status === 'pending' && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                await reportService.updateReportStatus(r.id, 'resolved');
+                                                                fetchAllReports();
+                                                            }}
+                                                            className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                                                            title="Çözüldü İşaretle"
+                                                        >
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (confirm('Bu bildirimi silmek istediğinize emin misiniz?')) {
+                                                                await reportService.deleteReport(r.id);
+                                                                fetchAllReports();
+                                                            }
+                                                        }}
+                                                        className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                                        title="Sil"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
 
-                    {((activeTab === 'hadiths' && hadiths.length === 0) || (activeTab === 'users' && users.length === 0)) && !loading && (
+                    {((activeTab === 'hadiths' && hadiths.length === 0) || (activeTab === 'users' && users.length === 0) || (activeTab === 'reports' && reports.length === 0)) && !loading && (
                         <div className="py-24 text-center">
                             <div className="inline-flex p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-600 mb-4">
                                 <Search size={32} />

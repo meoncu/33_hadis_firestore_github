@@ -197,3 +197,36 @@ export const userService = {
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 };
+
+export const reportService = {
+    async addReport(data: {
+        hadithId: string;
+        userId: string;
+        userEmail: string;
+        userName: string;
+        note: string;
+        hadithText: string;
+    }) {
+        return await addDoc(collection(db, 'reports'), {
+            ...data,
+            status: 'pending',
+            createdAt: serverTimestamp()
+        });
+    },
+
+    async getReports() {
+        const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async updateReportStatus(reportId: string, status: 'pending' | 'resolved' | 'ignored') {
+        const docRef = doc(db, 'reports', reportId);
+        return await updateDoc(docRef, { status });
+    },
+
+    async deleteReport(reportId: string) {
+        const docRef = doc(db, 'reports', reportId);
+        return await deleteDoc(docRef);
+    }
+};
