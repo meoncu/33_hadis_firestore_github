@@ -51,9 +51,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function HadithDetailPage({ params }: PageProps) {
-    const hadith = await hadithService.getHadithById(params.id);
+    const rawHadith = await hadithService.getHadithById(params.id);
 
-    if (!hadith) {
+    if (!rawHadith) {
         return (
             <div className="min-h-screen flex items-center justify-center text-slate-400">
                 Hadis bulunamadı.
@@ -61,5 +61,13 @@ export default async function HadithDetailPage({ params }: PageProps) {
         );
     }
 
-    return <HadithDetailClient hadith={hadith} />;
+    // Serialize data: Firestore Timestamp objects cannot be passed directly to Client Components
+    const hadith = {
+        ...rawHadith,
+        eklemeTarihi: rawHadith.eklemeTarihi?.toDate
+            ? rawHadith.eklemeTarihi.toDate().toISOString()
+            : rawHadith.eklemeTarihi
+    };
+
+    return <HadithDetailClient hadith={hadith as any} />;
 }
