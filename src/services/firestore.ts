@@ -14,7 +14,8 @@ import {
     deleteDoc,
     serverTimestamp,
     QueryDocumentSnapshot,
-    increment
+    increment,
+    runTransaction
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Hadith, HadithCategory } from '../types/hadith';
@@ -104,30 +105,45 @@ export const hadithService = {
     async toggleLikeWithUser(hadithId: string, userId: string) {
         const likeRef = doc(db, 'likes', `${userId}_${hadithId}`);
         const hadithRef = doc(db, HADITH_COLLECTION, hadithId);
-        const likeSnap = await getDoc(likeRef);
+        const userRef = doc(db, 'users', userId);
 
-        if (likeSnap.exists()) {
-            await deleteDoc(likeRef);
-            await updateDoc(hadithRef, { likeSayisi: increment(-1) });
-            // Update user total likes
-            const userRef = doc(db, 'users', userId);
-            await updateDoc(userRef, { totalLikes: increment(-1) });
-            return false; // Result is unliked
-        } else {
-            await setDoc(likeRef, {
-                userId,
-                hadithId,
-                createdAt: serverTimestamp()
-            });
-            await updateDoc(hadithRef, { likeSayisi: increment(1) });
-            // Update user total likes
-            const userRef = doc(db, 'users', userId);
-            await updateDoc(userRef, {
-                totalLikes: increment(1),
-                lastActivity: serverTimestamp()
-            });
-            return true; // Result is liked
-        }
+        return await runTransaction(db, async (transaction) => {
+            const likeSnap = await transaction.get(likeRef);
+            const userSnap = await transaction.get(userRef);
+
+            // Eğer kullanıcı dökümanı yoksa (nadir durum), önce oluştur
+            if (!userSnap.exists()) {
+                transaction.set(userRef, {
+                    uid: userId,
+                    totalLikes: 0,
+                    joinedAt: serverTimestamp(),
+                    lastLogin: serverTimestamp(),
+                    lastActivity: serverTimestamp()
+                }, { merge: true });
+            }
+
+            if (likeSnap.exists()) {
+                transaction.delete(likeRef);
+                transaction.update(hadithRef, { likeSayisi: increment(-1) });
+                transaction.update(userRef, {
+                    totalLikes: increment(-1),
+                    lastActivity: serverTimestamp()
+                });
+                return false; // unliked
+            } else {
+                transaction.set(likeRef, {
+                    userId,
+                    hadithId,
+                    createdAt: serverTimestamp()
+                });
+                transaction.update(hadithRef, { likeSayisi: increment(1) });
+                transaction.update(userRef, {
+                    totalLikes: increment(1),
+                    lastActivity: serverTimestamp()
+                });
+                return true; // liked
+            }
+        });
     }
 };
 

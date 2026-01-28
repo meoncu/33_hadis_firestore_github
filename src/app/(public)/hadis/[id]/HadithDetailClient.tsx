@@ -44,8 +44,9 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
             const liked = await hadithService.toggleLikeWithUser(hadith.id, user.uid);
             setIsLiked(liked);
             setLikeCount(prev => liked ? prev + 1 : prev - 1);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Like error:', error);
+            alert('Beğeni işlemi sırasında bir hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
         } finally {
             setIsLikeLoading(false);
         }
