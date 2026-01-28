@@ -109,6 +109,9 @@ export const hadithService = {
         if (likeSnap.exists()) {
             await deleteDoc(likeRef);
             await updateDoc(hadithRef, { likeSayisi: increment(-1) });
+            // Update user total likes
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, { totalLikes: increment(-1) });
             return false; // Result is unliked
         } else {
             await setDoc(likeRef, {
@@ -117,7 +120,56 @@ export const hadithService = {
                 createdAt: serverTimestamp()
             });
             await updateDoc(hadithRef, { likeSayisi: increment(1) });
+            // Update user total likes
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+                totalLikes: increment(1),
+                lastActivity: serverTimestamp()
+            });
             return true; // Result is liked
         }
+    }
+};
+
+export const userService = {
+    async syncUser(user: any) {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        const userData = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            lastLogin: serverTimestamp(),
+        };
+
+        if (!userSnap.exists()) {
+            await setDoc(userRef, {
+                ...userData,
+                joinedAt: serverTimestamp(),
+                totalLikes: 0,
+                role: user.email === 'meoncu@gmail.com' ? 'admin' : 'user'
+            });
+        } else {
+            await updateDoc(userRef, userData);
+        }
+    },
+
+    async getUsers() {
+        const q = query(collection(db, 'users'), orderBy('lastLogin', 'desc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async getUserActivities(userId: string) {
+        const q = query(
+            collection(db, 'likes'),
+            where('userId', '==', userId),
+            orderBy('createdAt', 'desc'),
+            limit(10)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 };

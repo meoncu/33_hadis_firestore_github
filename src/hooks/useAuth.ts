@@ -17,7 +17,11 @@ export function useAuth() {
     const router = useRouter();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const { userService } = await import('@/services/firestore');
+                await userService.syncUser(user);
+            }
             setUser(user);
             setLoading(false);
         });
