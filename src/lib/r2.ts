@@ -2,7 +2,6 @@ import { S3Client, PutObjectCommand, HeadObjectCommand, ListObjectsV2Command, De
 import { NodeHttpHandler } from "@aws-sdk/node-http-handler";
 import { Agent } from "https";
 
-// Cloudflare R2 Client - Vercel ve Lokal uyumluluğu için güçlendirildi
 const r2Client = new S3Client({
     region: "auto",
     endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -10,12 +9,7 @@ const r2Client = new S3Client({
         accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
     },
-    requestHandler: new NodeHttpHandler({
-        httpsAgent: new Agent({
-            // Vercel veya Lokal ağındaki SSL (Handshake 40) hatalarını aşmak için
-            rejectUnauthorized: false,
-        }),
-    }),
+    // Vercel için daha uyumlu standart handler
     forcePathStyle: true,
 });
 
