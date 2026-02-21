@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Hadith, HadithCategory } from '@/types/hadith';
 import { Loader2, Save, X, Image as ImageIcon, Upload, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { uploadImageAction } from '@/app/admin/actions';
-import { getProxyUrl } from '@/lib/utils';
+import { getProxyUrl, compressImage } from '@/lib/utils';
 
 const CATEGORIES: HadithCategory[] = ['Ahlak', 'İbadet', 'Dua', 'İman', 'Sosyal Hayat', 'Diğer'];
 
@@ -55,21 +55,22 @@ export default function HadithForm({ initialData, suggestedSiraNo, onSubmit, onC
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Dosya boyutu kontrolü (Örn: 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            alert('Dosya çok büyük (Maksimum 5MB)');
-            return;
-        }
-
-        // Yerel önizleme göster
-        const localPreview = URL.createObjectURL(file);
-        setPreviewUrl(localPreview);
         setUploadError(null);
         setUploading(true);
 
         try {
+            // Resmi sıkıştır (Maks 1024px genişlik, 0.8 kalite)
+            const compressedFile = await compressImage(file, 1024, 0.8);
+
+            console.log(`Orijinal Boyut: ${(file.size / 1024).toFixed(2)} KB`);
+            console.log(`Sıkıştırılmış Boyut: ${(compressedFile.size / 1024).toFixed(2)} KB`);
+
+            // Yerel önizleme göster (Sıkıştırılmış olanı)
+            const localPreview = URL.createObjectURL(compressedFile);
+            setPreviewUrl(localPreview);
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', compressedFile);
 
             const result = await uploadImageAction(formData);
 
@@ -89,7 +90,7 @@ export default function HadithForm({ initialData, suggestedSiraNo, onSubmit, onC
             }
         } catch (error: any) {
             console.error('Upload error:', error);
-            setUploadError('Bağlantı hatası oluştu.');
+            setUploadError('Resim işlenirken veya yüklenirken bir hata oluştu.');
             setPreviewUrl(initialData?.resimUrl || null);
         } finally {
             setUploading(false);
