@@ -90,7 +90,7 @@ export default function HadithForm({ initialData, suggestedSiraNo, onSubmit, onC
             }
         } catch (error: any) {
             console.error('Upload error:', error);
-            setUploadError('Resim işlenirken veya yüklenirken bir hata oluştu.');
+            setUploadError(`Hata: ${error.message || 'Resim işlenirken veya yüklenirken bir hata oluştu.'}`);
             setPreviewUrl(initialData?.resimUrl || null);
         } finally {
             setUploading(false);

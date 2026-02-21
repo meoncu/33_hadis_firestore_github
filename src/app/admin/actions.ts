@@ -8,6 +8,10 @@ export async function uploadImageAction(formData: FormData) {
     if (!file) throw new Error('No file provided');
 
     try {
+        if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID) {
+            throw new Error('Vercel R2 yapılandırması eksik (Env variables)');
+        }
+
         // Kontrol: Aynı isimde dosya zaten var mı?
         const existingUrl = await checkFileExists(file.name.replace(/\s+/g, "-"));
         if (existingUrl) {
@@ -22,7 +26,7 @@ export async function uploadImageAction(formData: FormData) {
         return { success: true, url };
     } catch (error: any) {
         console.error('R2 Upload Error:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || 'Sunucu tarafında bilinmeyen bir hata oluştu' };
     }
 }
 
