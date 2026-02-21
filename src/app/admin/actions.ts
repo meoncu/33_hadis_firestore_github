@@ -4,29 +4,33 @@ import { uploadToR2, checkFileExists, listR2Files, deleteFromR2 } from "@/lib/r2
 import { hadithService } from "@/services/firestore";
 
 export async function uploadImageAction(formData: FormData) {
-    const file = formData.get('file') as File;
-    if (!file) throw new Error('No file provided');
-
     try {
+        const file = formData.get('file') as File;
+        if (!file) {
+            return { success: false, error: 'Dosya bulunamadı.' };
+        }
+
         if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID) {
-            throw new Error('Vercel R2 yapılandırması eksik (Env variables)');
+            return { success: false, error: 'Sunucu konfigürasyonu eksik (Env variables).' };
         }
 
         // Kontrol: Aynı isimde dosya zaten var mı?
-        const existingUrl = await checkFileExists(file.name.replace(/\s+/g, "-"));
-        if (existingUrl) {
-            return {
-                success: true,
-                url: existingUrl,
-                alreadyExists: true
-            };
-        }
+        // Benzersiz isim oluşturmak için Date.now ekliyoruz
+        const safeName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
 
         const url = await uploadToR2(file);
+
+        if (!url) {
+            return { success: false, error: 'Yükleme sonrası URL alınamadı.' };
+        }
+
         return { success: true, url };
     } catch (error: any) {
-        console.error('R2 Upload Error:', error);
-        return { success: false, error: error.message || 'Sunucu tarafında bilinmeyen bir hata oluştu' };
+        console.error('SERVER ACTION ERROR:', error);
+        return {
+            success: false,
+            error: error.message || 'Sunucu tarafında beklenmedik bir hata oluştu.'
+        };
     }
 }
 
