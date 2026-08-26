@@ -2,7 +2,7 @@
 
 import { HadithCategory } from '@/types/hadith';
 import { cn } from '@/lib/utils';
-import { Search } from 'lucide-react';
+import { Search, RotateCcw } from 'lucide-react';
 
 const CATEGORIES: (HadithCategory | 'All')[] = ['All', 'Ahlak', 'İbadet', 'Dua', 'İman', 'Sosyal Hayat'];
 
@@ -17,6 +17,7 @@ interface FilterBarProps {
     totalHadithsCount?: number;
     readCount?: number;
     unreadCount?: number;
+    onResetReadHistory?: () => void;
 }
 
 export default function FilterBar({
@@ -29,7 +30,8 @@ export default function FilterBar({
     isLoggedIn = false,
     totalHadithsCount = 7580,
     readCount = 0,
-    unreadCount = 7580
+    unreadCount = 7580,
+    onResetReadHistory
 }: FilterBarProps) {
     return (
         <div className="space-y-4 md:space-y-6 w-full max-w-5xl mx-auto">
@@ -94,6 +96,17 @@ export default function FilterBar({
                             {readCount.toLocaleString()}
                         </span>
                     </button>
+
+                    {onResetReadHistory && (
+                        <button
+                            onClick={onResetReadHistory}
+                            className="px-3 py-1.5 rounded-xl text-xs md:text-sm font-semibold transition-all border bg-red-950/20 border-red-800/40 text-red-400 hover:bg-red-900/40 hover:text-red-300 flex items-center gap-1.5 shadow-sm ml-1"
+                            title="Okuma geçmişinizi sıfırlayın"
+                        >
+                            <RotateCcw size={14} />
+                            <span>Sıfırla</span>
+                        </button>
+                    )}
                 </div>
             )}
 

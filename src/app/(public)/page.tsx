@@ -113,6 +113,19 @@ function HadithListContent() {
         return true;
     });
 
+    const handleResetReadHistory = async () => {
+        if (!user) return;
+        if (confirm('Tüm okuma geçmişinizi sıfırlamak istediğinize emin misiniz? Bütün okundu işaretleri silinecektir.')) {
+            try {
+                await hadithService.resetUserReadHistory(user.uid);
+                setReadHadithIds(new Set());
+                alert('Okuma geçmişiniz başarıyla sıfırlandı!');
+            } catch (err: any) {
+                alert('Sıfırlama sırasında bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+            }
+        }
+    };
+
     return (
         <main className="min-h-screen pb-20">
             {/* Hero Section */}
@@ -138,6 +151,7 @@ function HadithListContent() {
                     totalHadithsCount={7580}
                     readCount={readHadithIds.size}
                     unreadCount={Math.max(0, 7580 - readHadithIds.size)}
+                    onResetReadHistory={handleResetReadHistory}
                 />
             </section>
 

@@ -15,7 +15,8 @@ import {
     serverTimestamp,
     QueryDocumentSnapshot,
     increment,
-    runTransaction
+    runTransaction,
+    writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Hadith, HadithCategory } from '../types/hadith';
@@ -176,6 +177,21 @@ export const hadithService = {
         } catch (error) {
             console.error('Error fetching read hadiths:', error);
             return new Set();
+        }
+    },
+
+    async resetUserReadHistory(userId: string) {
+        if (!userId) return;
+        try {
+            const snapshot = await getDocs(collection(db, 'users', userId, 'readHadiths'));
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(docSnap => {
+                batch.delete(docSnap.ref);
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error('Error resetting read history:', error);
+            throw error;
         }
     },
 
