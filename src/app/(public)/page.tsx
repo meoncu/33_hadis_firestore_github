@@ -7,38 +7,32 @@ import { Hadith, HadithCategory } from '@/types/hadith';
 import HadithCard from '@/components/public/HadithCard';
 import FilterBar from '@/components/public/FilterBar';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { QueryDocumentSnapshot } from 'firebase/firestore';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function HomePage() {
+function HadithListContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
+
     const [hadiths, setHadiths] = useState<Hadith[]>([]);
-    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [category, setCategory] = useState<HadithCategory | 'All'>('All');
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(pageFromUrl);
 
-    const { ref, inView } = useInView();
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageDocs, setPageDocs] = useState<Record<number, QueryDocumentSnapshot | undefined>>({ 1: undefined });
-
-    const loadPage = async (pageIndex: number, isCatChange = false, cat = category) => {
+    const loadPageData = async (targetPage: number, targetCat = category) => {
         setLoading(true);
         try {
-            const startDoc = isCatChange || pageIndex === 1 ? undefined : pageDocs[pageIndex - 1];
-
-            const result = await hadithService.getHadiths({
-                category: cat,
-                lastDoc: startDoc,
-                pageSize: 20
+            const result = await hadithService.getPageHadiths({
+                page: targetPage,
+                pageSize: 20,
+                category: targetCat
             });
 
             setHadiths(result.data || []);
-            setHasMore((result.data || []).length === 20);
-
-            if (result.lastDoc) {
-                setPageDocs(prev => ({ ...prev, [pageIndex]: result.lastDoc }));
-            }
+            setHasMore(result.hasMore);
         } catch (error) {
             console.error('Fetch error:', error);
             setHadiths([]);
@@ -47,12 +41,21 @@ export default function HomePage() {
         }
     };
 
-    // Initial fetch & Category Change
+    // URL change or category change listener
     useEffect(() => {
-        setCurrentPage(1);
-        setPageDocs({ 1: undefined });
-        loadPage(1, true, category);
-    }, [category]);
+        const page = parseInt(searchParams.get('page') || '1', 10);
+        setCurrentPage(page);
+        loadPageData(page, category);
+    }, [searchParams, category]);
+
+    const changePage = (newPage: number) => {
+        if (newPage < 1) return;
+        setCurrentPage(newPage);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('page', newPage.toString());
+        router.push(`/?${params.toString()}`, { scroll: false });
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+    };
 
     // Safe search filter
     const filteredHadiths = (hadiths || []).filter(h =>
@@ -107,14 +110,7 @@ export default function HomePage() {
                     ) : (
                         <div className="flex items-center gap-4">
                             <button
-                                onClick={() => {
-                                    if (currentPage > 1) {
-                                        const prevPage = currentPage - 1;
-                                        setCurrentPage(prevPage);
-                                        loadPage(prevPage);
-                                        window.scrollTo({ top: 300, behavior: 'smooth' });
-                                    }
-                                }}
+                                onClick={() => changePage(currentPage - 1)}
                                 disabled={currentPage === 1 || loading}
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-semibold text-sm"
                             >
@@ -127,14 +123,7 @@ export default function HomePage() {
                             </div>
 
                             <button
-                                onClick={() => {
-                                    if (hasMore) {
-                                        const nextPage = currentPage + 1;
-                                        setCurrentPage(nextPage);
-                                        loadPage(nextPage);
-                                        window.scrollTo({ top: 300, behavior: 'smooth' });
-                                    }
-                                }}
+                                onClick={() => changePage(currentPage + 1)}
                                 disabled={!hasMore || loading}
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-semibold text-sm"
                             >
@@ -146,5 +135,13 @@ export default function HomePage() {
                 </div>
             </section>
         </main>
+    );
+}
+
+export default function HomePage() {
+    return (
+        <Suspense fallback={<div className="p-20 text-center text-slate-500">Yükleniyor...</div>}>
+            <HadithListContent />
+        </Suspense>
     );
 }

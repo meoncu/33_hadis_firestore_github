@@ -75,6 +75,47 @@ export const hadithService = {
         }
     },
 
+    // Exact Page-based retrieval (Preserves order & allows direct navigation)
+    async getPageHadiths(params: {
+        page: number,
+        pageSize?: number,
+        category?: HadithCategory | 'All'
+    }) {
+        const { page = 1, pageSize = 20, category } = params;
+
+        try {
+            if (!category || category === 'All') {
+                const startSiraNo = (page - 1) * pageSize + 1;
+                const endSiraNo = page * pageSize;
+                const q = query(
+                    collection(db, HADITH_COLLECTION),
+                    where('siraNo', '>=', startSiraNo),
+                    where('siraNo', '<=', endSiraNo),
+                    orderBy('siraNo', 'asc')
+                );
+                const snapshot = await getDocs(q);
+                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hadith));
+                data.sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0));
+                return { data, hasMore: data.length === pageSize };
+            } else {
+                const q = query(
+                    collection(db, HADITH_COLLECTION),
+                    where('kategori', '==', category),
+                    limit(pageSize * page)
+                );
+                const snapshot = await getDocs(q);
+                let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hadith));
+                data.sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0));
+                const startIndex = (page - 1) * pageSize;
+                const pageData = data.slice(startIndex, startIndex + pageSize);
+                return { data: pageData, hasMore: pageData.length === pageSize };
+            }
+        } catch (error) {
+            console.error('getPageHadiths error:', error);
+            return { data: [], hasMore: false };
+        }
+    },
+
     // Public: Get single hadith
     async getHadithById(id: string) {
         const docRef = doc(db, HADITH_COLLECTION, id);

@@ -117,7 +117,7 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                     </div>
 
                     {/* Text */}
-                    <p className="text-base md:text-xl font-medium text-slate-200 mb-5 leading-relaxed line-clamp-6 flex-1">
+                    <p className="text-sm md:text-base font-normal text-slate-200/90 mb-4 leading-relaxed line-clamp-5 flex-1">
                         "{hadith.metin}"
                     </p>
 
