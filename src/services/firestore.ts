@@ -139,14 +139,20 @@ export const hadithService = {
     },
 
     // User Read Tracking
-    async markHadithAsRead(hadithId: string, userId: string) {
+    async markHadithAsRead(hadithId: string, userId: string, siraNo?: number) {
         if (!userId || !hadithId) return;
         try {
             const readRef = doc(db, 'users', userId, 'readHadiths', hadithId);
             await setDoc(readRef, {
                 readAt: serverTimestamp(),
-                hadithId
+                hadithId,
+                siraNo
             }, { merge: true });
+
+            if (siraNo) {
+                const altRef = doc(db, 'users', userId, 'readHadiths', `sira_${siraNo}`);
+                await setDoc(altRef, { readAt: serverTimestamp(), hadithId, siraNo }, { merge: true });
+            }
         } catch (error) {
             console.error('Error marking hadith as read:', error);
         }
@@ -157,7 +163,15 @@ export const hadithService = {
         try {
             const snapshot = await getDocs(collection(db, 'users', userId, 'readHadiths'));
             const ids = new Set<string>();
-            snapshot.docs.forEach(d => ids.add(d.id));
+            snapshot.docs.forEach(d => {
+                ids.add(d.id);
+                const data = d.data();
+                if (data.hadithId) ids.add(data.hadithId);
+                if (data.siraNo !== undefined) {
+                    ids.add(`sira_${data.siraNo}`);
+                    ids.add(String(data.siraNo));
+                }
+            });
             return ids;
         } catch (error) {
             console.error('Error fetching read hadiths:', error);

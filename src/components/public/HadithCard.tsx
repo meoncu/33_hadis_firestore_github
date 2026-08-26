@@ -45,7 +45,7 @@ export default function HadithCard({ hadith, className, isReadInitially = false,
         setIsExpanded(nextState);
         if (nextState && user && hadith.id && !isRead) {
             setIsRead(true);
-            hadithService.markHadithAsRead(hadith.id, user.uid);
+            hadithService.markHadithAsRead(hadith.id, user.uid, hadith.siraNo);
             if (onMarkRead) onMarkRead(hadith.id);
         }
     };

@@ -88,7 +88,9 @@ function HadithListContent() {
         if (!matchesSearch) return false;
 
         if (!user || readFilter === 'all') return true;
-        const isRead = h.id ? readHadithIds.has(h.id) : false;
+        const isRead = h.id
+            ? (readHadithIds.has(h.id) || (h.siraNo ? readHadithIds.has(`sira_${h.siraNo}`) || readHadithIds.has(String(h.siraNo)) : false))
+            : false;
 
         if (readFilter === 'unread') return !isRead;
         if (readFilter === 'read') return isRead;
@@ -128,19 +130,40 @@ function HadithListContent() {
             <section className="px-4 md:px-6 max-w-7xl mx-auto">
                 {filteredHadiths.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
-                        {filteredHadiths.map((h) => (
-                            <HadithCard
-                                key={h.id}
-                                hadith={h}
-                                isReadInitially={h.id ? readHadithIds.has(h.id) : false}
-                                onMarkRead={handleMarkRead}
-                            />
-                        ))}
+                        {filteredHadiths.map((h) => {
+                            const isRead = h.id
+                                ? (readHadithIds.has(h.id) || (h.siraNo ? readHadithIds.has(`sira_${h.siraNo}`) || readHadithIds.has(String(h.siraNo)) : false))
+                                : false;
+                            return (
+                                <HadithCard
+                                    key={h.id}
+                                    hadith={h}
+                                    isReadInitially={isRead}
+                                    onMarkRead={handleMarkRead}
+                                />
+                            );
+                        })}
                     </div>
                 ) : !loading && (
-                    <div className="text-center py-20 text-slate-500">
-                        Aradığınız kriterlere uygun hadis bulunamadı.
-                    </div>
+                    readFilter === 'unread' && hadiths.length > 0 ? (
+                        <div className="text-center py-16 px-4 bg-slate-900/60 border border-slate-800 rounded-2xl max-w-xl mx-auto space-y-4 shadow-xl">
+                            <div className="text-4xl">🎉</div>
+                            <h3 className="text-xl font-bold text-slate-100">Bu Sayfadaki Tüm Hadisleri Okudunuz!</h3>
+                            <p className="text-slate-400 text-sm leading-relaxed">
+                                Sayfa {currentPage} üzerindeki hadislerin tamamı okundu olarak işaretlendi. Sonraki sayfadaki okunmayan hadislerle devam edebilirsiniz.
+                            </p>
+                            <button
+                                onClick={() => changePage(currentPage + 1)}
+                                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm"
+                            >
+                                Sonraki Okunmayan Hadislere Geç (Sayfa {currentPage + 1}) →
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 text-slate-500">
+                            Aradığınız kriterlere uygun hadis bulunamadı.
+                        </div>
+                    )
                 )}
 
                 {/* Pagination Controls */}
