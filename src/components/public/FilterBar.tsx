@@ -14,6 +14,9 @@ interface FilterBarProps {
     readFilter?: 'all' | 'unread' | 'read';
     onReadFilterChange?: (filter: 'all' | 'unread' | 'read') => void;
     isLoggedIn?: boolean;
+    totalHadithsCount?: number;
+    readCount?: number;
+    unreadCount?: number;
 }
 
 export default function FilterBar({
@@ -23,7 +26,10 @@ export default function FilterBar({
     onSearchChange,
     readFilter = 'all',
     onReadFilterChange,
-    isLoggedIn = false
+    isLoggedIn = false,
+    totalHadithsCount = 7580,
+    readCount = 0,
+    unreadCount = 7580
 }: FilterBarProps) {
     return (
         <div className="space-y-4 md:space-y-6 w-full max-w-5xl mx-auto">
@@ -43,39 +49,50 @@ export default function FilterBar({
 
             {/* Read/Unread Filter for Logged-In Users */}
             {isLoggedIn && onReadFilterChange && (
-                <div className="flex justify-center items-center gap-2">
+                <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3">
                     <button
                         onClick={() => onReadFilterChange('all')}
                         className={cn(
-                            "px-3 py-1 rounded-lg text-xs font-semibold transition-all border",
+                            "px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-semibold transition-all border flex items-center gap-1.5 shadow-sm",
                             readFilter === 'all'
-                                ? "bg-slate-800 border-slate-700 text-white"
-                                : "bg-slate-900/40 border-slate-800 text-slate-500 hover:text-slate-300"
+                                ? "bg-slate-800 border-slate-700 text-white ring-2 ring-slate-700/50"
+                                : "bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
                         )}
                     >
-                        Tüm Hadisler
+                        <span>Tüm Hadisler</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-slate-950/60 text-[10px] md:text-xs font-mono text-slate-400">
+                            {totalHadithsCount.toLocaleString()}
+                        </span>
                     </button>
+
                     <button
                         onClick={() => onReadFilterChange('unread')}
                         className={cn(
-                            "px-3 py-1 rounded-lg text-xs font-semibold transition-all border",
+                            "px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-semibold transition-all border flex items-center gap-1.5 shadow-sm",
                             readFilter === 'unread'
-                                ? "bg-blue-900/40 border-blue-600/50 text-blue-300"
-                                : "bg-slate-900/40 border-slate-800 text-slate-500 hover:text-slate-300"
+                                ? "bg-blue-900/40 border-blue-500/50 text-blue-300 ring-2 ring-blue-500/30"
+                                : "bg-slate-900/40 border-slate-800 text-slate-400 hover:text-blue-300 hover:border-slate-700"
                         )}
                     >
-                        ✨ Henüz Okumadıklarım
+                        <span>✨ Henüz Okumadıklarım</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-blue-950/80 text-[10px] md:text-xs font-mono text-blue-400 font-bold">
+                            {unreadCount.toLocaleString()}
+                        </span>
                     </button>
+
                     <button
                         onClick={() => onReadFilterChange('read')}
                         className={cn(
-                            "px-3 py-1 rounded-lg text-xs font-semibold transition-all border",
+                            "px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-semibold transition-all border flex items-center gap-1.5 shadow-sm",
                             readFilter === 'read'
-                                ? "bg-emerald-900/40 border-emerald-600/50 text-emerald-300"
-                                : "bg-slate-900/40 border-slate-800 text-slate-500 hover:text-slate-300"
+                                ? "bg-emerald-900/40 border-emerald-500/50 text-emerald-300 ring-2 ring-emerald-500/30"
+                                : "bg-slate-900/40 border-slate-800 text-slate-400 hover:text-emerald-300 hover:border-slate-700"
                         )}
                     >
-                        ✓ Okuduklarım
+                        <span>✓ Okuduklarım</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-emerald-950/80 text-[10px] md:text-xs font-mono text-emerald-400 font-bold">
+                            {readCount.toLocaleString()}
+                        </span>
                     </button>
                 </div>
             )}

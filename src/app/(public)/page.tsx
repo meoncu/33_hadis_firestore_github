@@ -118,6 +118,9 @@ function HadithListContent() {
                     readFilter={readFilter}
                     onReadFilterChange={setReadFilter}
                     isLoggedIn={!!user}
+                    totalHadithsCount={7580}
+                    readCount={readHadithIds.size}
+                    unreadCount={Math.max(0, 7580 - readHadithIds.size)}
                 />
             </section>
 
