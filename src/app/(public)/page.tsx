@@ -27,14 +27,19 @@ function HadithListContent() {
 
     // User Read Tracking State
     const [readHadithIds, setReadHadithIds] = useState<Set<string>>(new Set());
+    const [initialReadHadithIds, setInitialReadHadithIds] = useState<Set<string>>(new Set());
     const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'read'>('unread');
 
     // Fetch user read hadiths when logged in
     useEffect(() => {
         if (user) {
-            hadithService.getUserReadHadithIds(user.uid).then(setReadHadithIds);
+            hadithService.getUserReadHadithIds(user.uid).then(ids => {
+                setReadHadithIds(ids);
+                setInitialReadHadithIds(ids);
+            });
         } else {
             setReadHadithIds(new Set());
+            setInitialReadHadithIds(new Set());
         }
     }, [user]);
 
@@ -62,6 +67,10 @@ function HadithListContent() {
         const page = parseInt(searchParams.get('page') || '1', 10);
         setCurrentPage(page);
         loadPageData(page, category);
+        // Refresh session initial read snapshot on page or category change
+        if (user) {
+            hadithService.getUserReadHadithIds(user.uid).then(setInitialReadHadithIds);
+        }
     }, [searchParams, category]);
 
     const changePage = (newPage: number) => {
@@ -88,12 +97,18 @@ function HadithListContent() {
         if (!matchesSearch) return false;
 
         if (!user || readFilter === 'all') return true;
-        const isRead = h.id
+
+        // Session-stable filtering: use initialReadHadithIds so reading a card doesn't make it vanish instantly while reading
+        const wasReadBeforeSession = h.id
+            ? (initialReadHadithIds.has(h.id) || (h.siraNo ? initialReadHadithIds.has(`sira_${h.siraNo}`) || initialReadHadithIds.has(String(h.siraNo)) : false))
+            : false;
+
+        const isCurrentlyRead = h.id
             ? (readHadithIds.has(h.id) || (h.siraNo ? readHadithIds.has(`sira_${h.siraNo}`) || readHadithIds.has(String(h.siraNo)) : false))
             : false;
 
-        if (readFilter === 'unread') return !isRead;
-        if (readFilter === 'read') return isRead;
+        if (readFilter === 'unread') return !wasReadBeforeSession;
+        if (readFilter === 'read') return isCurrentlyRead;
 
         return true;
     });
