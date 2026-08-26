@@ -6,7 +6,7 @@ import { hadithService } from '@/services/firestore';
 import { Hadith, HadithCategory } from '@/types/hadith';
 import HadithCard from '@/components/public/HadithCard';
 import FilterBar from '@/components/public/FilterBar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 
 export default function HomePage() {
@@ -19,35 +19,46 @@ export default function HomePage() {
 
     const { ref, inView } = useInView();
 
-    const fetchHadiths = useCallback(async (isInitial = false) => {
-        if (loading || (!isInitial && !hasMore)) return;
+    const [currentPage, setCurrentPage] = useState(1);
+    const [docHistory, setDocHistory] = useState<(QueryDocumentSnapshot | undefined)[]>([undefined]);
+
+    const fetchHadiths = useCallback(async (isInitial = false, pageIndex = 1) => {
+        if (loading) return;
 
         setLoading(true);
         try {
+            const targetLastDoc = isInitial ? undefined : docHistory[pageIndex - 1];
+
             const result = await hadithService.getHadiths({
                 category,
-                lastDoc: isInitial ? undefined : lastDoc,
-                pageSize: 12
+                lastDoc: targetLastDoc,
+                pageSize: 20
             });
 
-            if (isInitial) {
-                setHadiths(result.data);
-            } else {
-                setHadiths(prev => [...prev, ...result.data]);
-            }
-
+            setHadiths(result.data);
             setLastDoc(result.lastDoc);
-            setHasMore(result.data.length === 12);
+            setHasMore(result.data.length === 20);
+
+            // Sayfa geçmişi takibi (Önceki sayfalara hızlı dönebilmek için)
+            if (result.lastDoc) {
+                setDocHistory(prev => {
+                    const next = [...prev];
+                    next[pageIndex] = result.lastDoc;
+                    return next;
+                });
+            }
         } catch (error) {
             console.error('Fetch error:', error);
         } finally {
             setLoading(false);
         }
-    }, [category, lastDoc, loading, hasMore]);
+    }, [category, docHistory, loading]);
 
     // Initial fetch / category change
     useEffect(() => {
-        fetchHadiths(true);
+        setCurrentPage(1);
+        setDocHistory([undefined]);
+        fetchHadiths(true, 1);
     }, [category]);
 
     // Load more when scrolling
@@ -100,12 +111,50 @@ export default function HomePage() {
                     </div>
                 )}
 
-                {/* Loading Spinner / Intersection Trigger */}
-                <div ref={ref} className="mt-12 flex justify-center py-8">
-                    {loading && (
+                {/* Pagination Controls */}
+                <div className="mt-12 flex flex-col items-center gap-4 py-8 border-t border-slate-800/50">
+                    {loading ? (
                         <div className="flex flex-col items-center gap-2">
                             <Loader2 className="animate-spin text-blue-500" size={32} />
                             <p className="text-slate-500 text-sm">Hikmetler yükleniyor...</p>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => {
+                                    if (currentPage > 1) {
+                                        const prevPage = currentPage - 1;
+                                        setCurrentPage(prevPage);
+                                        fetchHadiths(false, prevPage);
+                                        window.scrollTo({ top: 300, behavior: 'smooth' });
+                                    }
+                                }}
+                                disabled={currentPage === 1 || loading}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-semibold text-sm"
+                            >
+                                <ChevronLeft size={18} />
+                                Önceki Sayfa
+                            </button>
+
+                            <div className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold rounded-xl text-sm">
+                                Sayfa {currentPage}
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    if (hasMore) {
+                                        const nextPage = currentPage + 1;
+                                        setCurrentPage(nextPage);
+                                        fetchHadiths(false, nextPage);
+                                        window.scrollTo({ top: 300, behavior: 'smooth' });
+                                    }
+                                }}
+                                disabled={!hasMore || loading}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-semibold text-sm"
+                            >
+                                Sonraki Sayfa
+                                <ChevronRight size={18} />
+                            </button>
                         </div>
                     )}
                 </div>

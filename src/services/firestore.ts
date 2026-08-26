@@ -30,10 +30,11 @@ export const hadithService = {
         pageSize?: number,
         includeDrafts?: boolean
     }) {
-        const { category, lastDoc, pageSize = 12, includeDrafts = false } = params;
+        const { category, lastDoc, pageSize = 20, includeDrafts = false } = params;
 
         let q = query(
             collection(db, HADITH_COLLECTION),
+            orderBy('siraNo', 'asc'),
             limit(pageSize)
         );
 
