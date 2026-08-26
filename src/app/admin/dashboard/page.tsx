@@ -185,37 +185,48 @@ export default function AdminDashboard() {
 
         setImportProgress({ current: 0, total: 7580, isImporting: true });
         try {
-            const res = await fetch('/api/hadiths-seed');
-            const data = await res.json();
-            if (!data.success || !data.data) {
-                throw new Error(data.error || 'Veri çekilemedi');
-            }
-
-            const hadithsList = data.data;
             const { writeBatch, doc, serverTimestamp } = await import('firebase/firestore');
             const { db } = await import('@/services/firebase');
 
-            const BATCH_SIZE = 350;
-            let count = 0;
-
-            for (let i = 0; i < hadithsList.length; i += BATCH_SIZE) {
-                const chunk = hadithsList.slice(i, i + BATCH_SIZE);
-                const batch = writeBatch(db);
-
-                for (const item of chunk) {
-                    const docRef = doc(db, 'hadiths', `bukhari_${item.siraNo}`);
-                    batch.set(docRef, {
-                        ...item,
-                        eklemeTarihi: serverTimestamp()
-                    }, { merge: true });
-                }
-
-                await batch.commit();
-                count += chunk.length;
-                setImportProgress({ current: count, total: hadithsList.length, isImporting: true });
+            // 1. İlk sayfayı çekip toplam sayfa ve hadis sayısını öğren
+            const firstRes = await fetch('/api/hadiths-seed?page=1&limit=1000');
+            const firstData = await firstRes.json();
+            if (!firstData.success) {
+                throw new Error(firstData.error || 'Veri çekilemedi');
             }
 
-            alert(`🎉 Tebrikler! Tüm ${count} hadis Firestore veritabanına yüklendi.`);
+            const totalPages = firstData.totalPages || 8;
+            const grandTotal = firstData.total || 7580;
+            let totalImported = 0;
+
+            for (let p = 1; p <= totalPages; p++) {
+                const pageRes = p === 1 ? firstRes : await fetch(`/api/hadiths-seed?page=${p}&limit=1000`);
+                const pageData = p === 1 ? firstData : await pageRes.json();
+
+                if (!pageData.success || !pageData.data) continue;
+
+                const pageHadiths = pageData.data;
+                const BATCH_SIZE = 350;
+
+                for (let i = 0; i < pageHadiths.length; i += BATCH_SIZE) {
+                    const chunk = pageHadiths.slice(i, i + BATCH_SIZE);
+                    const batch = writeBatch(db);
+
+                    for (const item of chunk) {
+                        const docRef = doc(db, 'hadiths', `bukhari_${item.siraNo}`);
+                        batch.set(docRef, {
+                            ...item,
+                            eklemeTarihi: serverTimestamp()
+                        }, { merge: true });
+                    }
+
+                    await batch.commit();
+                    totalImported += chunk.length;
+                    setImportProgress({ current: totalImported, total: grandTotal, isImporting: true });
+                }
+            }
+
+            alert(`🎉 Tebrikler! Tüm ${totalImported} hadis Firestore veritabanına başarıyla yüklendi.`);
             await fetchAll();
         } catch (error: any) {
             console.error('Import error:', error);
