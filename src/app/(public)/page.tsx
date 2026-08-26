@@ -120,6 +120,8 @@ function HadithListContent() {
         }
     };
 
+    const uniqueReadCount = hadithService.getUniqueReadCount(readHadithIds);
+
     return (
         <main className="min-h-screen pb-20">
             {/* Hero Section */}
@@ -143,8 +145,8 @@ function HadithListContent() {
                     onReadFilterChange={setReadFilter}
                     isLoggedIn={!!user}
                     totalHadithsCount={7580}
-                    readCount={readHadithIds.size}
-                    unreadCount={Math.max(0, 7580 - readHadithIds.size)}
+                    readCount={uniqueReadCount}
+                    unreadCount={Math.max(0, 7580 - uniqueReadCount)}
                     onResetReadHistory={handleResetReadHistory}
                 />
             </section>

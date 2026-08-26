@@ -235,6 +235,16 @@ export const hadithService = {
         }
     },
 
+    getUniqueReadCount(readSet: Set<string>): number {
+        let count = 0;
+        readSet.forEach(id => {
+            if (!id.startsWith('sira_') && isNaN(Number(id))) {
+                count++;
+            }
+        });
+        return count;
+    },
+
     // Admin: CRUD
     async addHadith(data: Omit<Hadith, 'id' | 'eklemeTarihi'>) {
         return await addDoc(collection(db, HADITH_COLLECTION), {
