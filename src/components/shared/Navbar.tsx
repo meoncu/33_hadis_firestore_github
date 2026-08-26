@@ -48,7 +48,7 @@ export default function Navbar() {
 
                     {user ? (
                         <div className="flex items-center gap-4">
-                            {user.email === 'meoncu@gmail.com' && (
+                            {user?.email === 'meoncu@gmail.com' && (
                                 <Link
                                     href="/admin/dashboard"
                                     className="bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-slate-950 px-3 py-1 rounded-lg text-xs font-bold transition-all border border-amber-500/20"
@@ -107,7 +107,7 @@ export default function Navbar() {
                                 />
                                 <div className="flex flex-col">
                                     <span className="text-slate-200 font-medium line-clamp-1">{user.displayName}</span>
-                                    {user.email === 'meoncu@gmail.com' && (
+                                    {user?.email === 'meoncu@gmail.com' && (
                                         <Link href="/admin/dashboard" className="text-amber-400 text-xs font-bold hover:underline" onClick={() => setIsOpen(false)}>
                                             Yönetim Paneline Git →
                                         </Link>

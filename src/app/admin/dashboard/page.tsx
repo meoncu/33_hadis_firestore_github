@@ -39,6 +39,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingHadith, setEditingHadith] = useState<Hadith | null>(null);
+    const [importProgress, setImportProgress] = useState<{ current: number; total: number; isImporting: boolean } | null>(null);
 
     const fetchAll = async () => {
         setLoading(true);
@@ -175,8 +176,6 @@ export default function AdminDashboard() {
             }
         }
     };
-
-    const [importProgress, setImportProgress] = useState<{ current: number; total: number; isImporting: boolean } | null>(null);
 
     const handleImportAllHadiths = async () => {
         if (!confirm('SQLite veritabanındaki 7.580 hadis (Arapça + Türkçe) Firestore veritabanına topluca yüklenecektir. Onaylıyor musunuz?')) {
