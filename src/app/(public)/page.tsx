@@ -27,19 +27,17 @@ function HadithListContent() {
 
     // User Read Tracking State
     const [readHadithIds, setReadHadithIds] = useState<Set<string>>(new Set());
-    const [initialReadHadithIds, setInitialReadHadithIds] = useState<Set<string>>(new Set());
     const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'read'>('unread');
+    const [activeReadingHadithId, setActiveReadingHadithId] = useState<string | null>(null);
 
     // Fetch user read hadiths when logged in
     useEffect(() => {
         if (user) {
             hadithService.getUserReadHadithIds(user.uid).then(ids => {
                 setReadHadithIds(ids);
-                setInitialReadHadithIds(ids);
             });
         } else {
             setReadHadithIds(new Set());
-            setInitialReadHadithIds(new Set());
         }
     }, [user]);
 
@@ -67,10 +65,7 @@ function HadithListContent() {
         const page = parseInt(searchParams.get('page') || '1', 10);
         setCurrentPage(page);
         loadPageData(page, category);
-        // Refresh session initial read snapshot on page or category change
-        if (user) {
-            hadithService.getUserReadHadithIds(user.uid).then(setInitialReadHadithIds);
-        }
+        setActiveReadingHadithId(null);
     }, [searchParams, category]);
 
     const changePage = (newPage: number) => {
@@ -80,11 +75,16 @@ function HadithListContent() {
         params.set('page', newPage.toString());
         router.push(`/?${params.toString()}`, { scroll: false });
         loadPageData(newPage, category);
+        setActiveReadingHadithId(null);
         window.scrollTo({ top: 300, behavior: 'smooth' });
     };
 
     const handleMarkRead = (hadithId: string) => {
         setReadHadithIds(prev => new Set(prev).add(hadithId));
+    };
+
+    const handleToggleExpand = (hadithId: string) => {
+        setActiveReadingHadithId(prev => prev === hadithId ? null : hadithId);
     };
 
     // Safe search & Read/Unread filter
@@ -98,16 +98,16 @@ function HadithListContent() {
 
         if (!user || readFilter === 'all') return true;
 
-        // Session-stable filtering: use initialReadHadithIds so reading a card doesn't make it vanish instantly while reading
-        const wasReadBeforeSession = h.id
-            ? (initialReadHadithIds.has(h.id) || (h.siraNo ? initialReadHadithIds.has(`sira_${h.siraNo}`) || initialReadHadithIds.has(String(h.siraNo)) : false))
-            : false;
-
         const isCurrentlyRead = h.id
             ? (readHadithIds.has(h.id) || (h.siraNo ? readHadithIds.has(`sira_${h.siraNo}`) || readHadithIds.has(String(h.siraNo)) : false))
             : false;
 
-        if (readFilter === 'unread') return !wasReadBeforeSession;
+        if (readFilter === 'unread') {
+            // Hadis şu an aktif okunan hadis ise ekranda kalsın, başka hadise geçildiğinde okunanlara aktarılsın
+            const isActiveReading = h.id === activeReadingHadithId;
+            return !isCurrentlyRead || isActiveReading;
+        }
+
         if (readFilter === 'read') return isCurrentlyRead;
 
         return true;
@@ -155,6 +155,8 @@ function HadithListContent() {
                                     hadith={h}
                                     isReadInitially={isRead}
                                     onMarkRead={handleMarkRead}
+                                    isExpandedControlled={h.id === activeReadingHadithId}
+                                    onToggleExpandControlled={handleToggleExpand}
                                 />
                             );
                         })}

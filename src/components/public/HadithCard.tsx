@@ -17,16 +17,27 @@ interface HadithCardProps {
     className?: string;
     isReadInitially?: boolean;
     onMarkRead?: (hadithId: string) => void;
+    isExpandedControlled?: boolean;
+    onToggleExpandControlled?: (hadithId: string) => void;
 }
 
-export default function HadithCard({ hadith, className, isReadInitially = false, onMarkRead }: HadithCardProps) {
+export default function HadithCard({
+    hadith,
+    className,
+    isReadInitially = false,
+    onMarkRead,
+    isExpandedControlled,
+    onToggleExpandControlled
+}: HadithCardProps) {
     const { user, loginWithGoogle } = useAuth();
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(hadith.likeSayisi || 0);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [internalExpanded, setInternalExpanded] = useState(false);
     const [isRead, setIsRead] = useState(isReadInitially);
+
+    const isExpanded = isExpandedControlled !== undefined ? isExpandedControlled : internalExpanded;
 
     useEffect(() => {
         setIsRead(isReadInitially);
@@ -42,7 +53,12 @@ export default function HadithCard({ hadith, className, isReadInitially = false,
 
     const handleExpandToggle = () => {
         const nextState = !isExpanded;
-        setIsExpanded(nextState);
+        if (onToggleExpandControlled && hadith.id) {
+            onToggleExpandControlled(hadith.id);
+        } else {
+            setInternalExpanded(nextState);
+        }
+
         if (nextState && user && hadith.id && !isRead) {
             setIsRead(true);
             hadithService.markHadithAsRead(hadith.id, user.uid, hadith.siraNo);
