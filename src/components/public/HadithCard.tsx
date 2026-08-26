@@ -21,6 +21,7 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
     const [likeCount, setLikeCount] = useState(hadith.likeSayisi || 0);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     useEffect(() => {
         if (user && hadith.id) {
@@ -79,13 +80,16 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
         }
     };
 
+    const isLongText = (hadith.metin || '').length > 180;
+
     return (
         <>
             <motion.div
+                layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5 }}
-                className={cn("glass-card overflow-hidden flex flex-col h-full group", className)}
+                whileHover={{ y: -3 }}
+                className={cn("glass-card overflow-hidden flex flex-col h-full group transition-all duration-300", className)}
             >
                 {/* Image Section */}
                 {hadith.resimUrl && (
@@ -102,7 +106,7 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                     </div>
                 )}
 
-                <div className="p-4 md:p-6 flex-1 flex flex-col">
+                <div className="p-4 md:p-6 flex-1 flex flex-col cursor-pointer" onClick={() => isLongText && setIsExpanded(!isExpanded)}>
                     {/* Category & SiraNo Header */}
                     <div className="flex justify-between items-center mb-3">
                         <span className="px-2 py-0.5 bg-blue-500/5 text-blue-400/80 text-[10px] md:text-xs font-bold rounded-md border border-blue-500/10 uppercase tracking-tighter md:tracking-wider">
@@ -116,8 +120,11 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                         )}
                     </div>
 
-                    {/* Text */}
-                    <p className="text-sm md:text-base font-normal text-slate-200/90 mb-4 leading-relaxed line-clamp-5 flex-1">
+                    {/* Text - Expandable inline */}
+                    <p className={cn(
+                        "text-sm md:text-base font-normal text-slate-200/90 mb-4 leading-relaxed transition-all duration-300 flex-1",
+                        !isExpanded && "line-clamp-5"
+                    )}>
                         "{hadith.metin}"
                     </p>
 
@@ -125,12 +132,12 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                     <div className="space-y-1.5 mt-auto">
                         {hadith.ravi && (
                             <div className="flex items-center gap-2 text-slate-400 text-[13px] md:text-sm">
-                                <User size={12} className="text-blue-500/70" />
+                                <User size={12} className="text-blue-500/70 shrink-0" />
                                 <span className="font-medium">{hadith.ravi}</span>
                             </div>
                         )}
                         <div className="flex items-center gap-2 text-slate-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider">
-                            <BookOpen size={12} className="text-blue-500/70" />
+                            <BookOpen size={12} className="text-blue-500/70 shrink-0" />
                             <span>{hadith.kaynak}</span>
                         </div>
                     </div>
@@ -170,12 +177,21 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                         </button>
                     </div>
 
-                    <Link
-                        href={`/hadis/${hadith.id}`}
-                        className="text-sm text-blue-400 hover:text-blue-300 font-bold tracking-wide transition-colors"
-                    >
-                        Detaylar →
-                    </Link>
+                    {isLongText ? (
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="text-sm text-blue-400 hover:text-blue-300 font-bold tracking-wide transition-all flex items-center gap-1 active:scale-95"
+                        >
+                            {isExpanded ? 'Daralt ↑' : 'Tümünü Gör ↓'}
+                        </button>
+                    ) : (
+                        <Link
+                            href={`/hadis/${hadith.id}`}
+                            className="text-sm text-slate-500 hover:text-blue-400 font-semibold tracking-wide transition-colors"
+                        >
+                            Detay →
+                        </Link>
+                    )}
                 </div>
             </motion.div>
 
