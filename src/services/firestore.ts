@@ -32,31 +32,47 @@ export const hadithService = {
     }) {
         const { category, lastDoc, pageSize = 20, includeDrafts = false } = params;
 
-        let q = query(
-            collection(db, HADITH_COLLECTION),
-            orderBy('siraNo', 'asc'),
-            limit(pageSize)
-        );
+        let constraints: any[] = [];
 
         if (!includeDrafts) {
-            q = query(q, where('yayinDurumu', '==', 'published'));
+            constraints.push(where('yayinDurumu', '==', 'published'));
         }
 
         if (category && category !== 'All') {
-            q = query(q, where('kategori', '==', category));
+            constraints.push(where('kategori', '==', category));
         }
 
         if (lastDoc) {
-            q = query(q, startAfter(lastDoc));
+            constraints.push(startAfter(lastDoc));
         }
 
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hadith));
+        constraints.push(limit(pageSize));
 
-        return {
-            data,
-            lastDoc: snapshot.docs[snapshot.docs.length - 1]
-        };
+        try {
+            const q = query(collection(db, HADITH_COLLECTION), ...constraints);
+            const snapshot = await getDocs(q);
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hadith));
+
+            // Sola dayalı düzenli sıra no sıralaması
+            data.sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0));
+
+            return {
+                data,
+                lastDoc: snapshot.docs[snapshot.docs.length - 1]
+            };
+        } catch (error) {
+            console.error('Firestore getHadiths query error:', error);
+            // Fallback query (Basit liste çekimi)
+            const fallbackQ = query(collection(db, HADITH_COLLECTION), limit(pageSize));
+            const snapshot = await getDocs(fallbackQ);
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hadith));
+            data.sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0));
+
+            return {
+                data,
+                lastDoc: snapshot.docs[snapshot.docs.length - 1]
+            };
+        }
     },
 
     // Public: Get single hadith
