@@ -30,7 +30,7 @@ export const hadithService = {
         pageSize?: number,
         includeDrafts?: boolean
     }) {
-        const { category, lastDoc, pageSize = 20, includeDrafts = false } = params;
+        const { category, lastDoc, pageSize = 20, includeDrafts = true } = params;
 
         let constraints: any[] = [];
 

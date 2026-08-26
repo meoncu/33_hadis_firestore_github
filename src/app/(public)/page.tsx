@@ -20,59 +20,45 @@ export default function HomePage() {
     const { ref, inView } = useInView();
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [docHistory, setDocHistory] = useState<(QueryDocumentSnapshot | undefined)[]>([undefined]);
+    const [pageDocs, setPageDocs] = useState<Record<number, QueryDocumentSnapshot | undefined>>({ 1: undefined });
 
-    const fetchHadiths = useCallback(async (isInitial = false, pageIndex = 1) => {
-        if (loading) return;
-
+    const loadPage = async (pageIndex: number, isCatChange = false, cat = category) => {
         setLoading(true);
         try {
-            const targetLastDoc = isInitial ? undefined : docHistory[pageIndex - 1];
+            const startDoc = isCatChange || pageIndex === 1 ? undefined : pageDocs[pageIndex - 1];
 
             const result = await hadithService.getHadiths({
-                category,
-                lastDoc: targetLastDoc,
+                category: cat,
+                lastDoc: startDoc,
                 pageSize: 20
             });
 
-            setHadiths(result.data);
-            setLastDoc(result.lastDoc);
-            setHasMore(result.data.length === 20);
+            setHadiths(result.data || []);
+            setHasMore((result.data || []).length === 20);
 
-            // Sayfa geçmişi takibi (Önceki sayfalara hızlı dönebilmek için)
             if (result.lastDoc) {
-                setDocHistory(prev => {
-                    const next = [...prev];
-                    next[pageIndex] = result.lastDoc;
-                    return next;
-                });
+                setPageDocs(prev => ({ ...prev, [pageIndex]: result.lastDoc }));
             }
         } catch (error) {
             console.error('Fetch error:', error);
+            setHadiths([]);
         } finally {
             setLoading(false);
         }
-    }, [category, docHistory, loading]);
+    };
 
-    // Initial fetch / category change
+    // Initial fetch & Category Change
     useEffect(() => {
         setCurrentPage(1);
-        setDocHistory([undefined]);
-        fetchHadiths(true, 1);
+        setPageDocs({ 1: undefined });
+        loadPage(1, true, category);
     }, [category]);
 
-    // Load more when scrolling
-    useEffect(() => {
-        if (inView && hasMore && !loading) {
-            fetchHadiths();
-        }
-    }, [inView, hasMore, loading, fetchHadiths]);
-
-    // Filter by search query (client-side simple filter for now)
-    const filteredHadiths = hadiths.filter(h =>
-        h.metin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        h.ravi?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        h.kaynak.toLowerCase().includes(searchQuery.toLowerCase())
+    // Safe search filter
+    const filteredHadiths = (hadiths || []).filter(h =>
+        (h.metin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (h.ravi || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (h.kaynak || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -125,7 +111,7 @@ export default function HomePage() {
                                     if (currentPage > 1) {
                                         const prevPage = currentPage - 1;
                                         setCurrentPage(prevPage);
-                                        fetchHadiths(false, prevPage);
+                                        loadPage(prevPage);
                                         window.scrollTo({ top: 300, behavior: 'smooth' });
                                     }
                                 }}
@@ -145,7 +131,7 @@ export default function HomePage() {
                                     if (hasMore) {
                                         const nextPage = currentPage + 1;
                                         setCurrentPage(nextPage);
-                                        fetchHadiths(false, nextPage);
+                                        loadPage(nextPage);
                                         window.scrollTo({ top: 300, behavior: 'smooth' });
                                     }
                                 }}
