@@ -138,6 +138,33 @@ export const hadithService = {
         return null;
     },
 
+    // User Read Tracking
+    async markHadithAsRead(hadithId: string, userId: string) {
+        if (!userId || !hadithId) return;
+        try {
+            const readRef = doc(db, 'users', userId, 'readHadiths', hadithId);
+            await setDoc(readRef, {
+                readAt: serverTimestamp(),
+                hadithId
+            }, { merge: true });
+        } catch (error) {
+            console.error('Error marking hadith as read:', error);
+        }
+    },
+
+    async getUserReadHadithIds(userId: string): Promise<Set<string>> {
+        if (!userId) return new Set();
+        try {
+            const snapshot = await getDocs(collection(db, 'users', userId, 'readHadiths'));
+            const ids = new Set<string>();
+            snapshot.docs.forEach(d => ids.add(d.id));
+            return ids;
+        } catch (error) {
+            console.error('Error fetching read hadiths:', error);
+            return new Set();
+        }
+    },
+
     // Admin: CRUD
     async addHadith(data: Omit<Hadith, 'id' | 'eklemeTarihi'>) {
         return await addDoc(collection(db, HADITH_COLLECTION), {

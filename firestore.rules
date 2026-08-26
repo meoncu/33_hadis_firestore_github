@@ -15,6 +15,14 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
+    match /users/{userId}/readHadiths/{hadithId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/likes/{hadithId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
     // Global rule for other collections
     match /{document=**} {
       allow read: if true;

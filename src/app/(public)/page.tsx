@@ -10,7 +10,10 @@ import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
+import { useAuth } from '@/hooks/useAuth';
+
 function HadithListContent() {
+    const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
@@ -21,6 +24,19 @@ function HadithListContent() {
     const [category, setCategory] = useState<HadithCategory | 'All'>('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(pageFromUrl);
+
+    // User Read Tracking State
+    const [readHadithIds, setReadHadithIds] = useState<Set<string>>(new Set());
+    const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'read'>('all');
+
+    // Fetch user read hadiths when logged in
+    useEffect(() => {
+        if (user) {
+            hadithService.getUserReadHadithIds(user.uid).then(setReadHadithIds);
+        } else {
+            setReadHadithIds(new Set());
+        }
+    }, [user]);
 
     const loadPageData = async (targetPage: number, targetCat = category) => {
         setLoading(true);
@@ -58,12 +74,27 @@ function HadithListContent() {
         window.scrollTo({ top: 300, behavior: 'smooth' });
     };
 
-    // Safe search filter
-    const filteredHadiths = (hadiths || []).filter(h =>
-        (h.metin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (h.ravi || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (h.kaynak || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const handleMarkRead = (hadithId: string) => {
+        setReadHadithIds(prev => new Set(prev).add(hadithId));
+    };
+
+    // Safe search & Read/Unread filter
+    const filteredHadiths = (hadiths || []).filter(h => {
+        const matchesSearch =
+            (h.metin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (h.ravi || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (h.kaynak || '').toLowerCase().includes(searchQuery.toLowerCase());
+
+        if (!matchesSearch) return false;
+
+        if (!user || readFilter === 'all') return true;
+        const isRead = h.id ? readHadithIds.has(h.id) : false;
+
+        if (readFilter === 'unread') return !isRead;
+        if (readFilter === 'read') return isRead;
+
+        return true;
+    });
 
     return (
         <main className="min-h-screen pb-20">
@@ -84,6 +115,9 @@ function HadithListContent() {
                     onCategoryChange={setCategory}
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
+                    readFilter={readFilter}
+                    onReadFilterChange={setReadFilter}
+                    isLoggedIn={!!user}
                 />
             </section>
 
@@ -92,7 +126,12 @@ function HadithListContent() {
                 {filteredHadiths.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
                         {filteredHadiths.map((h) => (
-                            <HadithCard key={h.id} hadith={h} />
+                            <HadithCard
+                                key={h.id}
+                                hadith={h}
+                                isReadInitially={h.id ? readHadithIds.has(h.id) : false}
+                                onMarkRead={handleMarkRead}
+                            />
                         ))}
                     </div>
                 ) : !loading && (

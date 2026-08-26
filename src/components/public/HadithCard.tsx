@@ -10,18 +10,27 @@ import { hadithService } from '@/services/firestore';
 import { useState, useEffect } from 'react';
 import ReportModal from './ReportModal';
 
+import { Check } from 'lucide-react';
+
 interface HadithCardProps {
     hadith: Hadith;
     className?: string;
+    isReadInitially?: boolean;
+    onMarkRead?: (hadithId: string) => void;
 }
 
-export default function HadithCard({ hadith, className }: HadithCardProps) {
+export default function HadithCard({ hadith, className, isReadInitially = false, onMarkRead }: HadithCardProps) {
     const { user, loginWithGoogle } = useAuth();
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(hadith.likeSayisi || 0);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isRead, setIsRead] = useState(isReadInitially);
+
+    useEffect(() => {
+        setIsRead(isReadInitially);
+    }, [isReadInitially]);
 
     useEffect(() => {
         if (user && hadith.id) {
@@ -30,6 +39,16 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
             setIsLiked(false);
         }
     }, [user, hadith.id]);
+
+    const handleExpandToggle = () => {
+        const nextState = !isExpanded;
+        setIsExpanded(nextState);
+        if (nextState && user && hadith.id && !isRead) {
+            setIsRead(true);
+            hadithService.markHadithAsRead(hadith.id, user.uid);
+            if (onMarkRead) onMarkRead(hadith.id);
+        }
+    };
 
     const handleLike = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -89,7 +108,11 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -3 }}
-                className={cn("glass-card overflow-hidden flex flex-col h-full group transition-all duration-300", className)}
+                className={cn(
+                    "glass-card overflow-hidden flex flex-col h-full group transition-all duration-300 relative",
+                    isRead && "border-emerald-500/20 bg-emerald-950/5",
+                    className
+                )}
             >
                 {/* Image Section */}
                 {hadith.resimUrl && (
@@ -106,12 +129,20 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                     </div>
                 )}
 
-                <div className="p-4 md:p-6 flex-1 flex flex-col cursor-pointer" onClick={() => isLongText && setIsExpanded(!isExpanded)}>
-                    {/* Category & SiraNo Header */}
-                    <div className="flex justify-between items-center mb-3">
-                        <span className="px-2 py-0.5 bg-blue-500/5 text-blue-400/80 text-[10px] md:text-xs font-bold rounded-md border border-blue-500/10 uppercase tracking-tighter md:tracking-wider">
-                            {hadith.kategori}
-                        </span>
+                <div className="p-4 md:p-6 flex-1 flex flex-col cursor-pointer" onClick={handleExpandToggle}>
+                    {/* Category & SiraNo & Read Badge Header */}
+                    <div className="flex justify-between items-center mb-3 gap-2">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-blue-500/5 text-blue-400/80 text-[10px] md:text-xs font-bold rounded-md border border-blue-500/10 uppercase tracking-tighter md:tracking-wider">
+                                {hadith.kategori}
+                            </span>
+                            {isRead && (
+                                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] md:text-xs font-bold rounded-md border border-emerald-500/20 flex items-center gap-1">
+                                    <Check size={10} />
+                                    Okundu
+                                </span>
+                            )}
+                        </div>
                         {hadith.siraNo && (
                             <div className="flex items-center gap-1 text-slate-600 font-bold text-xs md:text-sm">
                                 <Hash size={10} className="text-blue-500/50" />
@@ -179,7 +210,7 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
 
                     {isLongText ? (
                         <button
-                            onClick={() => setIsExpanded(!isExpanded)}
+                            onClick={handleExpandToggle}
                             className="text-sm text-blue-400 hover:text-blue-300 font-bold tracking-wide transition-all flex items-center gap-1 active:scale-95"
                         >
                             {isExpanded ? 'Daralt ↑' : 'Tümünü Gör ↓'}
