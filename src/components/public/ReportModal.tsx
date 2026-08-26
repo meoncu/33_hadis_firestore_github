@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Hadith } from '@/types/hadith';
 import { useAuth } from '@/hooks/useAuth';
 import { reportService } from '@/services/firestore';
-import { AlertTriangle, Send, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, Send, X, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ReportModalProps {
@@ -46,7 +46,7 @@ export default function ReportModal({ hadith, isOpen, onClose }: ReportModalProp
             }, 2000);
         } catch (error) {
             console.error('Report error:', error);
-            alert('Bildirim gönderilirken bir hata oluştu.');
+            alert('Yorum gönderilirken bir hata oluştu.');
         } finally {
             setLoading(false);
         }
@@ -72,11 +72,11 @@ export default function ReportModal({ hadith, isOpen, onClose }: ReportModalProp
                     >
                         {!user ? (
                             <div className="p-12 text-center">
-                                <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <AlertTriangle className="text-amber-500" size={32} />
+                                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <MessageSquare className="text-blue-500" size={32} />
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Giriş Yapmalısınız</h3>
-                                <p className="text-slate-400 mb-8">Hata bildirmek için lütfen Google hesabınızla giriş yapın.</p>
+                                <p className="text-slate-400 mb-8">Yorum yapmak için lütfen Google hesabınızla giriş yapın.</p>
                                 <button
                                     onClick={() => loginWithGoogle()}
                                     className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-600/20"
@@ -91,14 +91,14 @@ export default function ReportModal({ hadith, isOpen, onClose }: ReportModalProp
                                     <CheckCircle2 className="text-emerald-500" size={40} />
                                 </div>
                                 <h3 className="text-2xl font-bold text-white mb-2 font-outfit">Teşekkürler!</h3>
-                                <p className="text-slate-400">Bildiriminiz yöneticiye iletildi. Hassasiyetiniz için teşekkür ederiz.</p>
+                                <p className="text-slate-400">Yorumunuz yöneticiye iletildi. Değerli katkınız için teşekkür ederiz.</p>
                             </div>
                         ) : (
                             <>
                                 <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                        <AlertTriangle className="text-amber-500" size={20} />
-                                        Hata Bildir / Not Ekle
+                                        <MessageSquare className="text-blue-500" size={20} />
+                                        Hadis Hakkında Yorum Yap
                                     </h3>
                                     <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
                                         <X size={24} />
@@ -107,17 +107,17 @@ export default function ReportModal({ hadith, isOpen, onClose }: ReportModalProp
 
                                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                                     <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
-                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-2">İlgili Hadis</p>
+                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-2">Hadis</p>
                                         <p className="text-slate-300 text-sm italic line-clamp-3">"{hadith.metin}"</p>
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-400 mb-2">Notunuz / Hata detayı</label>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">Yorumunuz</label>
                                         <textarea
                                             required
                                             value={note}
                                             onChange={(e) => setNote(e.target.value)}
-                                            placeholder="Bu hadis ile ilgili tespit ettiğiniz hatayı veya notu buraya yazın..."
+                                            placeholder="Bu hadis ile ilgili düşüncelerinizi veya yorumunuzu buraya yazın..."
                                             className="w-full h-32 bg-slate-800 border-slate-700 rounded-2xl p-4 text-white focus:ring-2 focus:ring-blue-600 outline-none resize-none transition-all placeholder:text-slate-600"
                                         />
                                     </div>
@@ -128,7 +128,7 @@ export default function ReportModal({ hadith, isOpen, onClose }: ReportModalProp
                                         className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:bg-slate-700 text-white py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
                                     >
                                         {loading ? <Loader2 className="animate-spin" /> : <Send size={20} />}
-                                        Bildirimi Gönder
+                                        Yorumu Gönder
                                     </button>
                                 </form>
                             </>

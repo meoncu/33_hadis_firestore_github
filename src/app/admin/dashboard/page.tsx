@@ -176,6 +176,55 @@ export default function AdminDashboard() {
         }
     };
 
+    const [importProgress, setImportProgress] = useState<{ current: number; total: number; isImporting: boolean } | null>(null);
+
+    const handleImportAllHadiths = async () => {
+        if (!confirm('SQLite veritabanındaki 7.580 hadis (Arapça + Türkçe) Firestore veritabanına topluca yüklenecektir. Onaylıyor musunuz?')) {
+            return;
+        }
+
+        setImportProgress({ current: 0, total: 7580, isImporting: true });
+        try {
+            const res = await fetch('/api/hadiths-seed');
+            const data = await res.json();
+            if (!data.success || !data.data) {
+                throw new Error(data.error || 'Veri çekilemedi');
+            }
+
+            const hadithsList = data.data;
+            const { writeBatch, doc, serverTimestamp } = await import('firebase/firestore');
+            const { db } = await import('@/services/firebase');
+
+            const BATCH_SIZE = 350;
+            let count = 0;
+
+            for (let i = 0; i < hadithsList.length; i += BATCH_SIZE) {
+                const chunk = hadithsList.slice(i, i + BATCH_SIZE);
+                const batch = writeBatch(db);
+
+                for (const item of chunk) {
+                    const docRef = doc(db, 'hadiths', `bukhari_${item.siraNo}`);
+                    batch.set(docRef, {
+                        ...item,
+                        eklemeTarihi: serverTimestamp()
+                    }, { merge: true });
+                }
+
+                await batch.commit();
+                count += chunk.length;
+                setImportProgress({ current: count, total: hadithsList.length, isImporting: true });
+            }
+
+            alert(`🎉 Tebrikler! Tüm ${count} hadis Firestore veritabanına yüklendi.`);
+            await fetchAll();
+        } catch (error: any) {
+            console.error('Import error:', error);
+            alert(`Aktarım hatası: ${error.message || 'Bilinmeyen hata'}`);
+        } finally {
+            setImportProgress(null);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#050a14] p-6 lg:p-12">
             <div className="max-w-7xl mx-auto">
@@ -184,7 +233,17 @@ export default function AdminDashboard() {
                         <h1 className="text-3xl font-bold text-white mb-2 font-outfit">Yönetim Paneli</h1>
                         <p className="text-slate-500 text-sm">Hoş geldin, <span className="text-blue-400 font-medium">{user.email}</span></p>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4 items-center">
+                        <button
+                            onClick={handleImportAllHadiths}
+                            disabled={importProgress?.isImporting}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl transition-all font-semibold flex items-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
+                        >
+                            <Calendar size={18} />
+                            {importProgress?.isImporting
+                                ? `Yükleniyor... (${importProgress.current}/${importProgress.total})`
+                                : '7.580 Hadisi Firestore\'a Aktar'}
+                        </button>
                         <button
                             onClick={() => { setEditingHadith(null); setIsFormOpen(true); }}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl transition-all font-semibold flex items-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95"
@@ -231,7 +290,7 @@ export default function AdminDashboard() {
                             }`}
                     >
                         <MessageSquare size={18} />
-                        Bildirimler ({reports.filter(r => r.status === 'pending').length})
+                        Yorumlar ({reports.filter(r => r.status === 'pending').length})
                     </button>
                     <button
                         onClick={() => setActiveTab('media')}
@@ -393,7 +452,7 @@ export default function AdminDashboard() {
                                     <tr className="border-b border-slate-800 bg-slate-900/40 text-slate-400 text-xs uppercase tracking-widest">
                                         <th className="px-6 py-4 font-semibold">GÖNDEREN / TARİH</th>
                                         <th className="px-6 py-4 font-semibold">HADİS BİLGİSİ</th>
-                                        <th className="px-6 py-4 font-semibold">KULLANICI NOTU</th>
+                                        <th className="px-6 py-4 font-semibold">KULLANICI YORUMU</th>
                                         <th className="px-6 py-4 font-semibold">DURUM</th>
                                         <th className="px-6 py-4 font-semibold text-right">İŞLEMLER</th>
                                     </tr>

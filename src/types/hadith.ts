@@ -5,6 +5,7 @@ export type HadithCategory = 'Ahlak' | 'İbadet' | 'Dua' | 'İman' | 'Sosyal Hay
 export interface Hadith {
   id?: string;
   metin: string;
+  metinArapca?: string;
   ravi?: string;
   kaynak: string;
   kategori: HadithCategory;

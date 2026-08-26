@@ -20,32 +20,32 @@ export default function FilterBar({
     onSearchChange
 }: FilterBarProps) {
     return (
-        <div className="space-y-6 w-full max-w-5xl mx-auto">
+        <div className="space-y-4 md:space-y-6 w-full max-w-5xl mx-auto">
             {/* Search Input */}
             <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 md:h-5 md:w-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                 </div>
                 <input
                     type="text"
-                    placeholder="Anahtar kelime, ravi veya kitap ara..."
+                    placeholder="Hadis, ravi veya kaynak ara..."
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
-                    className="block w-full pl-12 pr-4 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all shadow-xl"
+                    className="block w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 bg-slate-900/50 border border-slate-800 rounded-xl md:rounded-2xl text-sm md:text-base text-slate-100 placeholder:text-slate-600 focus:ring-1 md:focus:ring-2 focus:ring-blue-500/50 outline-none transition-all shadow-lg backdrop-blur-sm"
                 />
             </div>
 
             {/* Category Pills */}
-            <div className="flex flex-wrap gap-2 justify-center">
+            <div className="flex overflow-x-auto pb-2 -mx-6 px-6 md:mx-0 md:px-0 scrollbar-hide gap-2 justify-start md:justify-center">
                 {CATEGORIES.map((cat) => (
                     <button
                         key={cat}
                         onClick={() => onCategoryChange(cat)}
                         className={cn(
-                            "px-5 py-2 rounded-full text-sm font-medium transition-all border",
+                            "px-4 md:px-5 py-1.5 md:py-2 whitespace-nowrap rounded-full text-xs md:text-sm font-semibold transition-all border",
                             selectedCategory === cat
-                                ? "bg-blue-600 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                                : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                                ? "bg-blue-600 border-blue-500 text-white shadow-xl"
+                                : "bg-slate-900/40 border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300"
                         )}
                     >
                         {cat === 'All' ? 'Tümü' : cat}

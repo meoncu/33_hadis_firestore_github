@@ -2,12 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // allowlist admin emails (starting point)
+    // allowlist admin emails
     function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.email.matches('.*@gmail.com') // Example: restrict to @gmail.com or specific emails
-        // || request.auth.token.admin == true (for custom claims later)
-      );
+      return request.auth != null && request.auth.token.email == 'meoncu@gmail.com';
     }
 
     match /hadiths/{hadithId} {
@@ -18,7 +15,7 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
-    // Global rule for other collections (if any added later)
+    // Global rule for other collections
     match /{document=**} {
       allow read: if true;
       allow write: if isAdmin();

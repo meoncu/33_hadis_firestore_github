@@ -67,17 +67,17 @@ export default function HomePage() {
     return (
         <main className="min-h-screen pb-20">
             {/* Hero Section */}
-            <section className="pt-20 pb-12 px-6 text-center">
-                <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+            <section className="pt-8 md:pt-20 pb-6 md:pb-8 px-4 md:px-6 text-center">
+                <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold mb-3 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">
                     Hadis-i Şerif Keşif Portalı
                 </h1>
-                <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+                <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg leading-relaxed opacity-80 px-2 md:px-0">
                     Doğru kaynaklardan derlenmiş, ahlak ve iman ufkumuzu aydınlatan nebevi mesajlar.
                 </p>
             </section>
 
             {/* Filters */}
-            <section className="px-6 mb-12">
+            <section className="px-4 md:px-6 mb-6 md:mb-8">
                 <FilterBar
                     selectedCategory={category}
                     onCategoryChange={setCategory}
@@ -87,9 +87,9 @@ export default function HomePage() {
             </section>
 
             {/* Grid */}
-            <section className="px-6 max-w-7xl mx-auto">
+            <section className="px-4 md:px-6 max-w-7xl mx-auto">
                 {filteredHadiths.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
                         {filteredHadiths.map((h) => (
                             <HadithCard key={h.id} hadith={h} />
                         ))}

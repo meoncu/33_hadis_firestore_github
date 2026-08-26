@@ -2,7 +2,7 @@
 
 import { Hadith } from '@/types/hadith';
 import { motion } from 'framer-motion';
-import { Share2, Heart, BookOpen, User, Hash, Loader2, AlertTriangle } from 'lucide-react';
+import { Share2, Heart, BookOpen, User, Hash, Loader2, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { cn, getProxyUrl } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -89,55 +89,60 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
             >
                 {/* Image Section */}
                 {hadith.resimUrl && (
-                    <div className="relative h-48 w-full overflow-hidden border-b border-slate-800">
+                    <div className="relative h-40 md:h-48 w-full overflow-hidden border-b border-slate-800">
                         <img
                             src={getProxyUrl(hadith.resimUrl)}
                             alt="Hadis görseli"
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                             onError={(e) => {
                                 (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x400?text=Resim+Yuklenemedi';
                             }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
                     </div>
                 )}
 
-                <div className="p-6 flex-1 flex flex-col">
+                <div className="p-4 md:p-6 flex-1 flex flex-col">
                     {/* Category & SiraNo Header */}
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold rounded-full border border-blue-500/20 uppercase tracking-wider">
+                    <div className="flex justify-between items-center mb-3">
+                        <span className="px-2 py-0.5 bg-blue-500/5 text-blue-400/80 text-[10px] md:text-xs font-bold rounded-md border border-blue-500/10 uppercase tracking-tighter md:tracking-wider">
                             {hadith.kategori}
                         </span>
                         {hadith.siraNo && (
-                            <div className="flex items-center gap-1 text-slate-500 font-bold font-outfit text-sm">
-                                <Hash size={12} className="text-blue-500" />
+                            <div className="flex items-center gap-1 text-slate-600 font-bold text-xs md:text-sm">
+                                <Hash size={10} className="text-blue-500/50" />
                                 <span>{hadith.siraNo}</span>
                             </div>
                         )}
                     </div>
 
                     {/* Text */}
-                    <p className="text-lg md:text-xl font-serif italic text-slate-100 mb-6 leading-relaxed line-clamp-6 flex-1">
+                    {hadith.metinArapca && (
+                        <p dir="rtl" className="text-lg md:text-2xl font-serif text-amber-200/90 mb-3 leading-loose line-clamp-3 text-right">
+                            {hadith.metinArapca}
+                        </p>
+                    )}
+                    <p className="text-base md:text-xl font-medium text-slate-200 mb-5 leading-relaxed line-clamp-6 flex-1">
                         "{hadith.metin}"
                     </p>
 
                     {/* Info */}
-                    <div className="space-y-2 mt-auto">
+                    <div className="space-y-1.5 mt-auto">
                         {hadith.ravi && (
-                            <div className="flex items-center gap-2 text-slate-400 text-sm">
-                                <User size={14} className="text-blue-500" />
+                            <div className="flex items-center gap-2 text-slate-400 text-[13px] md:text-sm">
+                                <User size={12} className="text-blue-500/70" />
                                 <span className="font-medium">{hadith.ravi}</span>
                             </div>
                         )}
-                        <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold uppercase tracking-widest">
-                            <BookOpen size={14} className="text-blue-500" />
+                        <div className="flex items-center gap-2 text-slate-500 text-[11px] md:text-xs font-semibold uppercase tracking-wider">
+                            <BookOpen size={12} className="text-blue-500/70" />
                             <span>{hadith.kaynak}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer Actions */}
-                <div className="px-6 py-4 border-t border-slate-800/50 flex items-center justify-between bg-slate-900/40">
+                <div className="px-4 py-3 md:px-6 md:py-4 border-t border-slate-800/30 flex items-center justify-between bg-slate-900/20">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={handleLike}
@@ -156,10 +161,10 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                         </button>
                         <button
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsReportModalOpen(true); }}
-                            className="p-1.5 text-slate-500 hover:text-amber-500 transition-colors"
-                            title="Hata Bildir"
+                            className="p-1.5 text-slate-500 hover:text-blue-500 transition-colors"
+                            title="Yorum Yap"
                         >
-                            <AlertTriangle size={18} />
+                            <MessageSquare size={18} />
                         </button>
                         <button
                             onClick={handleShare}

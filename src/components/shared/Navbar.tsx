@@ -19,14 +19,14 @@ export default function Navbar() {
     ];
 
     return (
-        <nav className="nav-blur">
-            <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <nav className="nav-blur sticky top-0 z-50 border-b border-slate-800/50">
+            <div className="max-w-7xl mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2 group">
-                    <div className="bg-blue-600 p-2 rounded-xl group-hover:rotate-12 transition-transform shadow-lg shadow-blue-500/20">
-                        <Book className="text-white" size={24} />
+                    <div className="bg-blue-600/90 p-1.5 md:p-2 rounded-lg md:rounded-xl group-hover:rotate-6 transition-transform shadow-lg shadow-blue-500/20">
+                        <Book className="text-white w-5 h-5 md:w-6 md:h-6" size={24} />
                     </div>
-                    <span className="text-xl font-bold tracking-tight text-white">HikmetPınarı</span>
+                    <span className="text-lg md:text-xl font-bold tracking-tight text-white">HikmetPınarı</span>
                 </Link>
 
                 {/* Desktop Links */}
@@ -48,6 +48,14 @@ export default function Navbar() {
 
                     {user ? (
                         <div className="flex items-center gap-4">
+                            {user.email === 'meoncu@gmail.com' && (
+                                <Link
+                                    href="/admin/dashboard"
+                                    className="bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-slate-950 px-3 py-1 rounded-lg text-xs font-bold transition-all border border-amber-500/20"
+                                >
+                                    Admin Paneli
+                                </Link>
+                            )}
                             <img
                                 src={user.photoURL || ''}
                                 alt={user.displayName || ''}
@@ -97,7 +105,14 @@ export default function Navbar() {
                                     className="w-10 h-10 rounded-full border border-blue-500/50"
                                     alt=""
                                 />
-                                <span className="text-slate-200 font-medium line-clamp-1">{user.displayName}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-slate-200 font-medium line-clamp-1">{user.displayName}</span>
+                                    {user.email === 'meoncu@gmail.com' && (
+                                        <Link href="/admin/dashboard" className="text-amber-400 text-xs font-bold hover:underline" onClick={() => setIsOpen(false)}>
+                                            Yönetim Paneline Git →
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
                             <button onClick={logout} className="text-red-400 font-medium shrink-0">Çıkış</button>
                         </div>

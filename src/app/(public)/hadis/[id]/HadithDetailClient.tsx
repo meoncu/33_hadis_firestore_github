@@ -13,7 +13,7 @@ import {
     ArrowLeft,
     Loader2,
     Calendar,
-    AlertTriangle,
+    MessageSquare,
     Eye,
     Hash,
     Quote,
@@ -83,11 +83,11 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
     };
 
     return (
-        <main className="min-h-screen pt-12 pb-20 px-6 bg-[#050a14]">
+        <main className="min-h-screen pt-6 md:pt-12 pb-16 md:pb-20 px-4 md:px-6 bg-[#050a14]">
             <div className="max-w-4xl mx-auto">
                 <button
                     onClick={() => router.back()}
-                    className="flex items-center gap-2 text-slate-400 hover:text-white mb-8 transition-colors group"
+                    className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 md:mb-8 transition-colors group text-sm md:text-base"
                 >
                     <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                     <span className="font-medium tracking-wide">Geri Dön</span>
@@ -100,7 +100,7 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
                 >
                     {/* Hero Image Section */}
                     {hadith.resimUrl && (
-                        <div className="w-full h-[400px] relative">
+                        <div className="w-full h-[250px] md:h-[400px] relative">
                             <img
                                 src={getProxyUrl(hadith.resimUrl)}
                                 alt="Hadis görseli"
@@ -119,26 +119,31 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
                         </div>
                     )}
 
-                    <div className="p-8 md:p-12 relative">
+                    <div className="p-5 md:p-12 relative">
                         {!hadith.resimUrl && hadith.siraNo && (
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-xl mb-8 font-bold font-outfit border border-blue-500/20">
-                                <Hash size={18} />
-                                <span className="text-xl">{hadith.siraNo}</span>
+                            <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-blue-500/10 text-blue-400 rounded-lg md:rounded-xl mb-6 md:mb-8 font-bold font-outfit border border-blue-500/20">
+                                <Hash className="w-4 h-4 md:w-5 md:h-5" />
+                                <span className="text-lg md:text-xl">{hadith.siraNo}</span>
                             </div>
                         )}
 
-                        <Quote className="text-blue-500/20 mb-6" size={60} />
+                        <Quote className="text-blue-500/20 mb-4 md:mb-6 w-10 h-10 md:w-16 md:h-16" />
 
-                        <h1 className="text-2xl md:text-5xl font-serif italic text-white leading-relaxed mb-12">
+                        {hadith.metinArapca && (
+                            <p dir="rtl" className="text-2xl md:text-4xl lg:text-5xl font-serif text-amber-200/90 leading-loose mb-8 text-right font-normal">
+                                {hadith.metinArapca}
+                            </p>
+                        )}
+                        <h1 className="text-xl md:text-4xl lg:text-5xl font-serif italic text-white leading-relaxed mb-8 md:mb-12">
                             "{hadith.metin}"
                         </h1>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-slate-800 pt-8 mt-12">
-                            <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 border-t border-slate-800/80 pt-6 md:pt-8 mt-8 md:mt-12">
+                            <div className="space-y-4 md:space-y-6">
                                 {hadith.ravi && (
-                                    <div className="flex items-center gap-4 text-slate-300">
-                                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                                            <User size={20} className="text-blue-400" />
+                                    <div className="flex items-center gap-3 md:gap-4 text-slate-300">
+                                        <div className="min-w-10 min-h-10 md:min-w-12 md:min-h-12 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                                            <User className="text-blue-400 w-5 h-5 md:w-6 md:h-6" />
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold">Ravi</p>
@@ -175,8 +180,8 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
                             </div>
                         </div>
 
-                        <div className="mt-12 flex flex-col md:flex-row md:items-center justify-between gap-6 border-t border-slate-800 pt-8">
-                            <div className="flex items-center gap-8">
+                        <div className="mt-8 md:mt-12 flex flex-row md:items-center justify-between gap-4 md:gap-6 border-t border-slate-800/80 pt-6 md:pt-8 bg-slate-900/30 -mx-5 px-5 pb-5 md:bg-transparent md:mx-0 md:px-0 md:pb-0 rounded-b-2xl md:rounded-none">
+                            <div className="flex items-center gap-4 md:gap-8 pt-2 md:pt-0">
                                 <button
                                     onClick={handleLike}
                                     disabled={isLikeLoading}
@@ -208,10 +213,10 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
                                 </button>
                                 <button
                                     onClick={() => setIsReportModalOpen(true)}
-                                    className="p-3 bg-slate-800 text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-2xl transition-all active:scale-95"
-                                    title="Hata Bildir"
+                                    className="p-3 bg-slate-800 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-2xl transition-all active:scale-95"
+                                    title="Yorum Yap"
                                 >
-                                    <AlertTriangle size={24} />
+                                    <MessageSquare size={24} />
                                 </button>
                             </div>
                         </div>
