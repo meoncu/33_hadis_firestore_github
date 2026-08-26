@@ -139,48 +139,88 @@ export const hadithService = {
         return null;
     },
 
-    // User Read Tracking
+    // User Read Tracking (Dual Storage: LocalStorage Instant Cache + Firestore Sync)
     async markHadithAsRead(hadithId: string, userId: string, siraNo?: number) {
-        if (!userId || !hadithId) return;
-        try {
-            const readRef = doc(db, 'users', userId, 'readHadiths', hadithId);
-            await setDoc(readRef, {
-                readAt: serverTimestamp(),
-                hadithId,
-                siraNo
-            }, { merge: true });
+        if (!hadithId) return;
 
-            if (siraNo) {
-                const altRef = doc(db, 'users', userId, 'readHadiths', `sira_${siraNo}`);
-                await setDoc(altRef, { readAt: serverTimestamp(), hadithId, siraNo }, { merge: true });
+        // 1. Save to LocalStorage immediately for instant refresh persistence
+        try {
+            const cacheKey = `read_hadiths_${userId || 'guest'}`;
+            const cached = localStorage.getItem(cacheKey);
+            const list: string[] = cached ? JSON.parse(cached) : [];
+            if (!list.includes(hadithId)) list.push(hadithId);
+            if (siraNo && !list.includes(`sira_${siraNo}`)) list.push(`sira_${siraNo}`);
+            if (siraNo && !list.includes(String(siraNo))) list.push(String(siraNo));
+            localStorage.setItem(cacheKey, JSON.stringify(list));
+        } catch (e) {
+            console.error('LocalStorage save error:', e);
+        }
+
+        // 2. Sync to Firestore in background if logged in
+        if (userId) {
+            try {
+                const readRef = doc(db, 'users', userId, 'readHadiths', hadithId);
+                await setDoc(readRef, {
+                    readAt: serverTimestamp(),
+                    hadithId,
+                    siraNo
+                }, { merge: true });
+
+                if (siraNo) {
+                    const altRef = doc(db, 'users', userId, 'readHadiths', `sira_${siraNo}`);
+                    await setDoc(altRef, { readAt: serverTimestamp(), hadithId, siraNo }, { merge: true });
+                }
+            } catch (error) {
+                console.error('Error syncing hadith read to Firestore:', error);
             }
-        } catch (error) {
-            console.error('Error marking hadith as read:', error);
         }
     },
 
     async getUserReadHadithIds(userId: string): Promise<Set<string>> {
-        if (!userId) return new Set();
+        const ids = new Set<string>();
+
+        // 1. Instantly load from LocalStorage cache
         try {
-            const snapshot = await getDocs(collection(db, 'users', userId, 'readHadiths'));
-            const ids = new Set<string>();
-            snapshot.docs.forEach(d => {
-                ids.add(d.id);
-                const data = d.data();
-                if (data.hadithId) ids.add(data.hadithId);
-                if (data.siraNo !== undefined) {
-                    ids.add(`sira_${data.siraNo}`);
-                    ids.add(String(data.siraNo));
-                }
-            });
-            return ids;
-        } catch (error) {
-            console.error('Error fetching read hadiths:', error);
-            return new Set();
+            const cacheKey = `read_hadiths_${userId || 'guest'}`;
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                const list: string[] = JSON.parse(cached);
+                list.forEach(id => ids.add(id));
+            }
+        } catch (e) {
+            console.error('LocalStorage read error:', e);
         }
+
+        // 2. Fetch from Firestore if logged in and merge
+        if (userId) {
+            try {
+                const snapshot = await getDocs(collection(db, 'users', userId, 'readHadiths'));
+                snapshot.docs.forEach(d => {
+                    ids.add(d.id);
+                    const data = d.data();
+                    if (data.hadithId) ids.add(data.hadithId);
+                    if (data.siraNo !== undefined) {
+                        ids.add(`sira_${data.siraNo}`);
+                        ids.add(String(data.siraNo));
+                    }
+                });
+
+                // Update LocalStorage cache with merged Firestore records
+                localStorage.setItem(`read_hadiths_${userId}`, JSON.stringify(Array.from(ids)));
+            } catch (error) {
+                console.error('Error fetching read hadiths from Firestore:', error);
+            }
+        }
+
+        return ids;
     },
 
     async resetUserReadHistory(userId: string) {
+        // Clear LocalStorage cache
+        try {
+            localStorage.removeItem(`read_hadiths_${userId || 'guest'}`);
+        } catch (e) {}
+
         if (!userId) return;
         try {
             const snapshot = await getDocs(collection(db, 'users', userId, 'readHadiths'));

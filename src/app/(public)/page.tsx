@@ -30,15 +30,9 @@ function HadithListContent() {
     const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'read'>('unread');
     const [activeReadingHadithId, setActiveReadingHadithId] = useState<string | null>(null);
 
-    // Fetch user read hadiths when logged in
+    // Fetch user read hadiths (Instant LocalStorage cache + Firestore Sync)
     useEffect(() => {
-        if (user) {
-            hadithService.getUserReadHadithIds(user.uid).then(ids => {
-                setReadHadithIds(ids);
-            });
-        } else {
-            setReadHadithIds(new Set());
-        }
+        hadithService.getUserReadHadithIds(user?.uid || '').then(setReadHadithIds);
     }, [user]);
 
     const loadPageData = async (targetPage: number, targetCat = category) => {
