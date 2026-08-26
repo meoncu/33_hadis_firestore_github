@@ -112,7 +112,17 @@ export const hadithService = {
             }
         } catch (error) {
             console.error('getPageHadiths error:', error);
-            return { data: [], hasMore: false };
+            try {
+                const fallbackQ = query(collection(db, HADITH_COLLECTION), limit(pageSize * page));
+                const snapshot = await getDocs(fallbackQ);
+                let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hadith));
+                data.sort((a, b) => (a.siraNo || 0) - (b.siraNo || 0));
+                const startIndex = (page - 1) * pageSize;
+                const pageData = data.slice(startIndex, startIndex + pageSize);
+                return { data: pageData, hasMore: pageData.length === pageSize };
+            } catch (fallbackErr) {
+                return { data: [], hasMore: false };
+            }
         }
     },
 

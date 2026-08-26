@@ -54,6 +54,7 @@ function HadithListContent() {
         const params = new URLSearchParams(searchParams.toString());
         params.set('page', newPage.toString());
         router.push(`/?${params.toString()}`, { scroll: false });
+        loadPageData(newPage, category);
         window.scrollTo({ top: 300, behavior: 'smooth' });
     };
 
