@@ -1,9 +1,11 @@
 import sqlite3
 import json
 import os
+import gzip
 
 db_path = os.path.join(os.path.dirname(__file__), 'bukhari_hadith_db_with_reference.db')
 json_path = os.path.join(os.path.dirname(__file__), 'hadiths_export.json')
+gz_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'lib', 'hadiths_export.json.gz')
 
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
@@ -17,7 +19,6 @@ rows = cursor.fetchall()
 
 def determine_category(title, text):
     title_lower = (title or "").lower()
-    text_lower = (text or "").lower()
     
     if any(k in title_lower for k in ['faith', 'belief', 'tauheed', 'iman']):
         return 'İman'
@@ -34,26 +35,20 @@ def determine_category(title, text):
 
 export_data = []
 
-for row in rows:
+for idx, row in enumerate(rows, start=1):
     raw_ref_key, book_num, local_num, title, narrator, english_text, arabic_text, turkce_text, in_book_ref = row
     
-    # Metin seçimi: Öncelik Türkçe metin, yoksa İngilizce metin
     metin = (turkce_text or english_text or "").strip()
     metin_arapca = (arabic_text or "").strip()
     ravi = (narrator or "").strip()
     
     chapter_title = (title or "").strip()
-    kaynak = f"Sahih-i Buhari, {chapter_title} (Hadis #{local_num or raw_ref_key})" if chapter_title else f"Sahih-i Buhari, Hadis #{raw_ref_key}"
+    kaynak = f"Sahih-i Buhari, {chapter_title} (Hadis #{idx})" if chapter_title else f"Sahih-i Buhari, Hadis #{idx}"
     
     category = determine_category(chapter_title, metin)
-    
-    try:
-        sira_no = int(raw_ref_key)
-    except Exception:
-        sira_no = 0
 
     item = {
-        "siraNo": sira_no,
+        "siraNo": idx, # Kesintisiz 1, 2, 3... 7580 sıralaması
         "metin": metin,
         "metinArapca": metin_arapca,
         "ravi": ravi,
@@ -68,8 +63,14 @@ for row in rows:
     }
     export_data.append(item)
 
+# JSON olarak kaydet
 with open(json_path, 'w', encoding='utf-8') as f:
     json.dump(export_data, f, ensure_ascii=False, indent=2)
 
-print(f"Toplam {len(export_data)} hadis {json_path} dosyasına aktarıldı.")
+# Gzip sıkıştırarak src/lib/ içine kaydet
+with open(json_path, 'rb') as f_in:
+    with gzip.open(gz_path, 'wb') as f_out:
+        f_out.writelines(f_in)
+
+print(f"Tüm {len(export_data)} hadis kesintisiz 1-{len(export_data)} sıra numaraları ile güncellendi ve {gz_path} konumuna kaydedildi.")
 conn.close()
