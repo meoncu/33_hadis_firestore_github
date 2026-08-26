@@ -117,11 +117,6 @@ export default function HadithCard({ hadith, className }: HadithCardProps) {
                     </div>
 
                     {/* Text */}
-                    {hadith.metinArapca && (
-                        <p dir="rtl" className="text-lg md:text-2xl font-serif text-amber-200/90 mb-3 leading-loose line-clamp-3 text-right">
-                            {hadith.metinArapca}
-                        </p>
-                    )}
                     <p className="text-base md:text-xl font-medium text-slate-200 mb-5 leading-relaxed line-clamp-6 flex-1">
                         "{hadith.metin}"
                     </p>

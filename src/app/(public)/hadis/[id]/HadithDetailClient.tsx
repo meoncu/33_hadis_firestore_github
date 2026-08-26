@@ -129,11 +129,6 @@ export default function HadithDetailClient({ hadith }: HadithDetailClientProps) 
 
                         <Quote className="text-blue-500/20 mb-4 md:mb-6 w-10 h-10 md:w-16 md:h-16" />
 
-                        {hadith.metinArapca && (
-                            <p dir="rtl" className="text-2xl md:text-4xl lg:text-5xl font-serif text-amber-200/90 leading-loose mb-8 text-right font-normal">
-                                {hadith.metinArapca}
-                            </p>
-                        )}
                         <h1 className="text-xl md:text-4xl lg:text-5xl font-serif italic text-white leading-relaxed mb-8 md:mb-12">
                             "{hadith.metin}"
                         </h1>
