@@ -27,7 +27,7 @@ function HadithListContent() {
 
     // User Read Tracking State
     const [readHadithIds, setReadHadithIds] = useState<Set<string>>(new Set());
-    const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'read'>('all');
+    const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'read'>('unread');
 
     // Fetch user read hadiths when logged in
     useEffect(() => {
